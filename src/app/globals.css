@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-dark: #0a0e27;
+  --color-primary-gold: #d4af37;
+  --color-primary-red: #ff3333;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b8d4;
+  --color-neutral-gray: #4a5568;
+
+  --animate-pulse-fast: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+body {
+  background-color: var(--color-primary-dark);
+  color: var(--color-text-primary);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* Base styles and reset if needed */
+* {
+  box-sizing: border-box;
+}
