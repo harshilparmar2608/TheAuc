@@ -1,3 +1,8 @@
+export interface IncrementRule {
+  upTo: number | null;   // null = "above all previous thresholds (no upper limit)"
+  increment: number;     // amount added to bid when this tier applies
+}
+
 export interface Tournament {
   id: string;
   name: string;
@@ -10,6 +15,7 @@ export interface Tournament {
   colors?: string[];
   colorAssignmentStatus: "pending" | "assigned";
   basePrice: number;
+  incrementRules?: IncrementRule[];   // tiered bid increment config
   createdAt: number;
   updatedAt: number;
 }

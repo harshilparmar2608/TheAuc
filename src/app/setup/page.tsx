@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ref, push, set } from "firebase/database";
 import { db } from "@/lib/firebase";
-import { Team, Player } from "@/types";
+import { Team, Player, IncrementRule } from "@/types";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 
@@ -26,6 +26,38 @@ export default function SetupPage() {
   const [budget, setBudget] = useState(10000);
   const [playerBasePrice, setPlayerBasePrice] = useState(500);
   const [logo, setLogo] = useState("/logo.png");
+
+  // Increment rules — default: ₹2k below 20k, ₹3k above
+  const [incrementRules, setIncrementRules] = useState<IncrementRule[]>([
+    { upTo: 20000, increment: 2000 },
+    { upTo: null,  increment: 3000 },
+  ]);
+
+  const addIncrementRule = () => {
+    setIncrementRules(prev => {
+      // Insert a new finite tier before the last open-ended rule
+      const last = prev[prev.length - 1];
+      const secondLast = prev[prev.length - 2];
+      const newUpTo = secondLast?.upTo ? secondLast.upTo + 10000 : 30000;
+      const newRules = [...prev.slice(0, -1), { upTo: newUpTo, increment: last.increment }, last];
+      return newRules;
+    });
+  };
+
+  const removeIncrementRule = (idx: number) => {
+    if (incrementRules.length <= 1) return;
+    const next = [...incrementRules];
+    next.splice(idx, 1);
+    // ensure last rule is always open-ended
+    next[next.length - 1] = { ...next[next.length - 1], upTo: null };
+    setIncrementRules(next);
+  };
+
+  const updateIncrementRule = (idx: number, field: keyof IncrementRule, value: number | null) => {
+    const next = [...incrementRules];
+    next[idx] = { ...next[idx], [field]: value };
+    setIncrementRules(next);
+  };
 
   // Step 2: Team Config
   const [menSlots, setMenSlots] = useState(5);
@@ -113,6 +145,7 @@ export default function SetupPage() {
         status: "setup",
         budget,
         basePrice: playerBasePrice,
+        incrementRules,
         menSlots,
         womenSlots,
         logo,
@@ -210,6 +243,80 @@ export default function SetupPage() {
                 <input type="number" value={playerBasePrice || ""} onChange={e => setPlayerBasePrice(parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-[#d4af37]/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]" />
               </div>
             </div>
+
+            {/* ── Increment Rules ── */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-bold text-white">Bid Increment Rules</h3>
+                  <p className="text-xs text-[#b0b8d4] mt-0.5">Each click on a team raises the bid by the rule below. The last rule has no upper limit.</p>
+                </div>
+                <button
+                  onClick={addIncrementRule}
+                  className="text-xs bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#d4af37] px-3 py-1.5 rounded-lg hover:bg-[#d4af37]/30 font-bold transition"
+                >
+                  + Add Tier
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {incrementRules.map((rule, idx) => {
+                  const isLast = idx === incrementRules.length - 1;
+                  return (
+                    <div key={idx} className="flex items-center gap-3 bg-black/30 border border-white/10 rounded-xl px-4 py-3">
+                      <div className="w-6 h-6 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 flex items-center justify-center text-xs font-bold text-[#d4af37] shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="flex flex-wrap gap-3 flex-1 items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-[#b0b8d4] whitespace-nowrap">Bid below ₹</span>
+                          {isLast ? (
+                            <span className="text-sm font-bold text-[#d4af37] w-28 text-center">∞ (no limit)</span>
+                          ) : (
+                            <input
+                              type="number"
+                              value={rule.upTo ?? ""}
+                              onChange={e => updateIncrementRule(idx, "upTo", parseInt(e.target.value) || 0)}
+                              className="w-28 bg-black/50 border border-[#d4af37]/40 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#d4af37] font-mono"
+                            />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-[#b0b8d4] whitespace-nowrap">→ Increment ₹</span>
+                          <input
+                            type="number"
+                            value={rule.increment}
+                            onChange={e => updateIncrementRule(idx, "increment", parseInt(e.target.value) || 0)}
+                            className="w-28 bg-black/50 border border-[#d4af37]/40 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#d4af37] font-mono"
+                          />
+                        </div>
+                      </div>
+                      {!isLast && incrementRules.length > 1 && (
+                        <button
+                          onClick={() => removeIncrementRule(idx)}
+                          className="text-red-400 hover:text-red-300 text-lg leading-none shrink-0"
+                          title="Remove tier"
+                        >×</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Preview */}
+              <div className="mt-3 p-3 bg-[#d4af37]/5 border border-[#d4af37]/20 rounded-xl">
+                <p className="text-xs text-[#d4af37] font-semibold mb-1">📊 Preview</p>
+                <p className="text-xs text-[#b0b8d4]">
+                  {incrementRules.map((r, i) => {
+                    const prev = i === 0 ? playerBasePrice : (incrementRules[i-1].upTo ?? 0);
+                    return r.upTo
+                      ? `₹${prev.toLocaleString()}–₹${r.upTo.toLocaleString()} → +₹${r.increment.toLocaleString()}`
+                      : `₹${prev.toLocaleString()}+ → +₹${r.increment.toLocaleString()}`;
+                  }).join("  |  ")}
+                </p>
+              </div>
+            </div>
+
             <button onClick={() => setStep(2)} className="mt-6 bg-[#d4af37] text-[#0a0e27] px-6 py-2 rounded font-bold hover:bg-yellow-400">Next</button>
           </div>
         )}
