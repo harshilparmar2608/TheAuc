@@ -316,53 +316,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── ABOUT STRIP ── */}
-        <RevealSection className="py-20 px-6" delay={0}>
-          <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
-            <div style={{
-              display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 24,
-            }}>
-              {[
-                { emoji: "🏟️", title: "Grand Stage", desc: "The biggest cricket auction platform built for communities" },
-                { emoji: "💰", title: "Live Bidding", desc: "Real-time auction with instant team budget tracking" },
-                { emoji: "🎲", title: "Fair & Random", desc: "Players shuffled randomly — every auction is a surprise" },
-                { emoji: "📺", title: "Spectator View", desc: "Beautiful live screen for all attendees to follow along" },
-              ].map((card) => (
-                <RevealSection key={card.title} delay={100}>
-                  <div style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(212,175,55,0.2)",
-                    borderRadius: 16, padding: "28px 20px",
-                    backdropFilter: "blur(10px)",
-                    transition: "transform 0.3s ease, border-color 0.3s ease",
-                    cursor: "default",
-                  }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.transform = "translateY(-6px)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.5)";
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-                      (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.2)";
-                    }}
-                  >
-                    <div style={{ fontSize: "2.2rem", marginBottom: 12 }}>{card.emoji}</div>
-                    <div style={{ fontWeight: 800, color: "#d4af37", marginBottom: 8, fontSize: "1.05rem" }}>{card.title}</div>
-                    <div style={{ color: "#b0b8d4", fontSize: "0.875rem", lineHeight: 1.6 }}>{card.desc}</div>
-                  </div>
-                </RevealSection>
-              ))}
-            </div>
-          </div>
-        </RevealSection>
 
-        {/* ── DIVIDER ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, maxWidth: 700, margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.4))" }} />
-          <div style={{ color: "#d4af37", fontSize: "1.5rem" }}>🏏</div>
-          <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(212,175,55,0.4), transparent)" }} />
-        </div>
 
         {/* ── TOURNAMENTS SECTION ── */}
         <section style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 24px 100px" }}>
