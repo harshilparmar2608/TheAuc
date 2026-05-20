@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -316,7 +317,92 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── PORTAL LINKS ── */}
+        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 20px" }}>
+          <RevealSection delay={0}>
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#d4af37", marginBottom: 8 }}>
+                Explore GJPL
+              </h2>
+              <p style={{ color: "#b0b8d4", fontSize: "0.9rem" }}>
+                Dive into the history, live action, and memories.
+              </p>
+            </div>
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16
+            }}>
+              <Link href="/hall-of-fame" className="group" style={{ textDecoration: "none" }}>
+                <div style={{
+                  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(212,175,55,0.2)",
+                  borderRadius: 12, padding: "20px", textAlign: "center",
+                  transition: "all 0.3s ease",
+                }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(212,175,55,0.1)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.5)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.2)";
+                  }}
+                >
+                  <div style={{ fontSize: "2rem", marginBottom: 8 }}>🏆</div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem" }}>Hall of Fame</div>
+                  <div style={{ color: "#b0b8d4", fontSize: "0.8rem", marginTop: 4 }}>Past Winners & Stats</div>
+                </div>
+              </Link>
 
+              <Link href="/matches" className="group" style={{ textDecoration: "none" }}>
+                <div style={{
+                  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(212,175,55,0.2)",
+                  borderRadius: 12, padding: "20px", textAlign: "center",
+                  transition: "all 0.3s ease",
+                }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(212,175,55,0.1)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.5)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.2)";
+                  }}
+                >
+                  <div style={{ fontSize: "2rem", marginBottom: 8 }}>🎯</div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem" }}>Live Matches</div>
+                  <div style={{ color: "#b0b8d4", fontSize: "0.8rem", marginTop: 4 }}>Live Scores & Cards</div>
+                </div>
+              </Link>
+
+              <Link href="/gallery" className="group" style={{ textDecoration: "none" }}>
+                <div style={{
+                  background: "rgba(255,255,255,0.03)", border: "1px solid rgba(212,175,55,0.2)",
+                  borderRadius: 12, padding: "20px", textAlign: "center",
+                  transition: "all 0.3s ease",
+                }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(212,175,55,0.1)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.5)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,175,55,0.2)";
+                  }}
+                >
+                  <div style={{ fontSize: "2rem", marginBottom: 8 }}>🖼️</div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: "1.1rem" }}>Gallery</div>
+                  <div style={{ color: "#b0b8d4", fontSize: "0.8rem", marginTop: 4 }}>Memories & Photos</div>
+                </div>
+              </Link>
+            </div>
+          </RevealSection>
+        </section>
+
+        {/* ── DIVIDER ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, maxWidth: 700, margin: "0 auto", padding: "0 24px", opacity: 0.5 }}>
+          <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.4))" }} />
+          <div style={{ color: "#d4af37", fontSize: "1rem" }}>🏏</div>
+          <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(212,175,55,0.4), transparent)" }} />
+        </div>
 
         {/* ── TOURNAMENTS SECTION ── */}
         <section style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 24px 100px" }}>

@@ -55,5 +55,51 @@ export interface AuctionState {
   soldPlayers: string[];
   unsoldPlayers: string[];
   rtmStatus: "not_started" | "live" | "completed";
-  rtmCurrentTeamIndex: number;
+}
+
+// --- Portal Data Models ---
+
+export interface SeasonTopPlayer {
+  name: string;
+  value: number; // runs or wickets
+  matches: number;
+}
+
+export interface Season {
+  id: string; // e.g., "gjpl_1"
+  year: number;
+  name: string; // e.g., "GJPL 1"
+  winner: string;
+  runnerUp: string;
+  manOfTheTournament: string;
+  topScorer: SeasonTopPlayer;
+  topWicketTaker: SeasonTopPlayer;
+  mvpWomen: string;
+  bestBowler: string;
+  totalMatches: number;
+  status: "completed" | "live" | "upcoming";
+}
+
+// Will be expanded in future phases for ball-by-ball
+export interface Match {
+  id: string;
+  seasonId: string;
+  team1: string;
+  team2: string;
+  date: number; // timestamp
+  venue: string;
+  result: {
+    winner: string;
+    margin: number;
+    marginType: "runs" | "wickets";
+  };
+  toss: {
+    winner: string;
+    decision: "bat" | "field";
+  };
+  awards: {
+    mom: string;
+    wow: string;
+  };
+  status: "upcoming" | "live" | "completed";
 }
