@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ref, push, set } from "firebase/database";
 import { db } from "@/lib/firebase";
@@ -13,6 +13,12 @@ export default function SetupPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("gjpl_admin_auth") !== "true") {
+      router.push("/admin");
+    }
+  }, [router]);
 
   // Step 1: Basics
   const [name, setName] = useState("");
@@ -138,7 +144,7 @@ export default function SetupPage() {
           playerId: playerRef.key,
           basePrice: playerBasePrice,
           status: "available",
-          currentBid: 0,
+          currentBid: playerBasePrice,
           currentBiddingTeam: null,
           soldTo: null,
           soldPrice: 0,
@@ -152,7 +158,7 @@ export default function SetupPage() {
       await set(auctionRef, {
         status: "not_started",
         currentPlayerIndex: 0,
-        currentBid: 0,
+        currentBid: playerBasePrice,
         currentBiddingTeam: null,
         timerSeconds: 30,
         timerRunning: false,

@@ -62,7 +62,7 @@ export default function Home() {
             Tournaments
           </h2>
           <button
-            onClick={() => router.push("/setup")}
+            onClick={() => router.push("/admin")}
             className="bg-transparent border border-[#d4af37] text-[#d4af37] px-6 py-2 rounded hover:bg-[#d4af37] hover:text-[#0a0e27] transition-all duration-300 font-semibold shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.6)]"
           >
             + Create New Tournament

@@ -1,0 +1,87 @@
+mutation SeedData @transaction @auth(level: PUBLIC, insecureReason: "This is for populating the database with sample data and is safe to expose to the public.") {
+  user_upsertMany(data: [
+    {
+      id: "10000000-0000-4000-8000-000000000001",
+      username: "auction_seller",
+      email: "seller@example.com",
+      passwordHash: "seller_password_hash",
+      createdAt: "2024-01-01T00:00:00Z",
+      shippingAddress: "123 Seller St, Anytown, USA",
+      phoneNumber: "555-111-2222"
+    },
+    {
+      id: "10000000-0000-4000-8000-000000000002",
+      username: "auction_buyer",
+      email: "buyer@example.com",
+      passwordHash: "buyer_password_hash",
+      createdAt: "2024-01-01T00:00:00Z",
+      shippingAddress: "456 Buyer Ave, Otherville, USA",
+      phoneNumber: "555-333-4444"
+    }
+  ])
+  auctionItem_upsertMany(data: [
+    {
+      id: "20000000-0000-4000-8000-000000000001",
+      title: "Vintage Camera",
+      description: "A rare vintage camera in excellent condition.",
+      startPrice: 150.00,
+      endTime: "2024-03-10T18:00:00Z",
+      createdAt: "2024-03-01T10:00:00Z",
+      status: "active",
+      imageUrl: "https://example.com/vintage_camera.jpg",
+      category: "Electronics",
+      sellerId: "10000000-0000-4000-8000-000000000001"
+    },
+    {
+      id: "20000000-0000-4000-8000-000000000002",
+      title: "Antique Vase",
+      description: "Beautiful hand-painted antique vase from the 19th century.",
+      startPrice: 500.00,
+      endTime: "2024-03-15T20:00:00Z",
+      createdAt: "2024-03-02T12:30:00Z",
+      status: "active",
+      imageUrl: "https://example.com/antique_vase.jpg",
+      category: "Collectibles",
+      sellerId: "10000000-0000-4000-8000-000000000001"
+    }
+  ])
+  bid_upsertMany(data: [
+    {
+      id: "30000000-0000-4000-8000-000000000001",
+      bidAmount: 160.00,
+      bidTime: "2024-03-05T14:00:00Z",
+      bidderId: "10000000-0000-4000-8000-000000000002",
+      itemId: "20000000-0000-4000-8000-000000000001"
+    },
+    {
+      id: "30000000-0000-4000-8000-000000000002",
+      bidAmount: 510.00,
+      bidTime: "2024-03-06T10:00:00Z",
+      bidderId: "10000000-0000-4000-8000-000000000002",
+      itemId: "20000000-0000-4000-8000-000000000002"
+    }
+  ])
+  watchlist_upsertMany(data: [
+    {
+      userId: "10000000-0000-4000-8000-000000000002",
+      itemId: "20000000-0000-4000-8000-000000000001",
+      createdAt: "2024-03-04T09:00:00Z"
+    },
+    {
+      userId: "10000000-0000-4000-8000-000000000002",
+      itemId: "20000000-0000-4000-8000-000000000002",
+      createdAt: "2024-03-04T09:15:00Z"
+    }
+  ])
+  notification_upsertMany(data: [
+    {
+      id: "40000000-0000-4000-8000-000000000001",
+      message: "Your bid of 160.00 on Vintage Camera was successful!",
+      type: "bid_successful",
+      isRead: false,
+      createdAt: "2024-03-05T14:05:00Z",
+      recipientId: "10000000-0000-4000-8000-000000000002",
+      auctionItemId: "20000000-0000-4000-8000-000000000001"
+    }
+  ])
+}

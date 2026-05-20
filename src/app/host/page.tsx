@@ -20,6 +20,16 @@ function HostPanelContent() {
   const [loading, setLoading] = useState(true);
   const [customBid, setCustomBid] = useState("");
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [showRestartModal, setShowRestartModal] = useState(false);
+  const [restartPassword, setRestartPassword] = useState("");
+  const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
+  const [editPassword, setEditPassword] = useState("");
+  const [showEditMode, setShowEditMode] = useState(false);
+  const [editTab, setEditTab] = useState<"settings" | "teams" | "players">("settings");
+  const [searchPlayer, setSearchPlayer] = useState("");
+  const [editTournament, setEditTournament] = useState<any>({});
+  const [editTeams, setEditTeams] = useState<Record<string, any>>({});
+  const [editPlayers, setEditPlayers] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (sessionStorage.getItem("gjpl_admin_auth") !== "true") {
@@ -87,7 +97,7 @@ function HostPanelContent() {
     await update(ref(db, `tournaments/${tournamentId}/auction`), {
       status: "paused",
       currentPlayerIndex: 0,
-      currentBid: 0,
+      currentBid: tournament.basePrice || 0,
       currentBiddingTeam: null,
       timerSeconds: 30,
       timerRunning: false,
@@ -104,12 +114,114 @@ function HostPanelContent() {
     router.push(hasUnsold ? `/unsold?tournament=${tournamentId}` : `/colors?tournament=${tournamentId}`);
   };
 
+  const handleRestartAuction = async () => {
+    if (!tournamentId) return;
+
+    const updates: Record<string, unknown> = {};
+    updates[`tournaments/${tournamentId}/status`] = "running";
+    
+    Object.values(players).forEach(p => {
+      updates[`tournaments/${tournamentId}/players/${p.playerId}/status`] = "available";
+      updates[`tournaments/${tournamentId}/players/${p.playerId}/soldTo`] = null;
+      updates[`tournaments/${tournamentId}/players/${p.playerId}/soldPrice`] = 0;
+      updates[`tournaments/${tournamentId}/players/${p.playerId}/currentBid`] = p.basePrice || tournament?.basePrice || 0;
+      updates[`tournaments/${tournamentId}/players/${p.playerId}/currentBiddingTeam`] = null;
+    });
+
+    Object.values(teams).forEach(t => {
+      updates[`tournaments/${tournamentId}/teams/${t.id}/remainingBudget`] = t.budget;
+      updates[`tournaments/${tournamentId}/teams/${t.id}/menCount`] = 0;
+      updates[`tournaments/${tournamentId}/teams/${t.id}/womenCount`] = 0;
+    });
+
+    updates[`tournaments/${tournamentId}/auction/status`] = "paused";
+    updates[`tournaments/${tournamentId}/auction/currentPlayerIndex`] = 0;
+    updates[`tournaments/${tournamentId}/auction/currentBid`] = tournament?.basePrice || 0;
+    updates[`tournaments/${tournamentId}/auction/currentBiddingTeam`] = null;
+    updates[`tournaments/${tournamentId}/auction/soldPlayers`] = [];
+    updates[`tournaments/${tournamentId}/auction/unsoldPlayers`] = [];
+    updates[`tournaments/${tournamentId}/auction/timerSeconds`] = 30;
+    updates[`tournaments/${tournamentId}/auction/timerRunning`] = false;
+
+    // Reshuffle players again
+    const availableNow = Object.values(players);
+    const shuffled = [...availableNow].sort(() => Math.random() - 0.5);
+    shuffled.forEach((p, idx) => {
+      updates[`tournaments/${tournamentId}/players/${p.playerId}/sortOrder`] = idx;
+    });
+
+    await update(ref(db), updates);
+    toast.success("Auction restarted! Players reshuffled randomly 🎲");
+    setShowRestartModal(false);
+    setRestartPassword("");
+  };
+
+  const saveTournamentSettings = async () => {
+    if (!tournamentId) return;
+    try {
+      await update(ref(db, `tournaments/${tournamentId}`), {
+        name: editTournament.name || tournament.name,
+        year: editTournament.year || tournament.year,
+        basePrice: editTournament.basePrice ?? tournament.basePrice,
+        budget: editTournament.budget ?? tournament.budget,
+      });
+      toast.success("Settings saved!");
+    } catch (e) { toast.error("Error saving settings"); }
+  };
+
+  const saveTeamSettings = async (teamId: string) => {
+    if (!tournamentId) return;
+    const t = editTeams[teamId];
+    if (!t) return;
+    try {
+      await update(ref(db, `tournaments/${tournamentId}/teams/${teamId}`), {
+        name: t.name,
+        remainingBudget: t.remainingBudget,
+      });
+      toast.success("Team saved!");
+    } catch (e) { toast.error("Error saving team"); }
+  };
+
+  const savePlayerSettings = async (playerId: string) => {
+    if (!tournamentId) return;
+    const p = editPlayers[playerId];
+    if (!p) return;
+    try {
+      await update(ref(db, `tournaments/${tournamentId}/players/${playerId}`), {
+        status: p.status,
+        soldPrice: p.soldPrice,
+        soldTo: p.status === 'sold' ? p.soldTo : null,
+      });
+      toast.success("Player saved!");
+    } catch (e) { toast.error("Error saving player"); }
+  };
+
+  const openEditMode = () => {
+    setEditTournament({
+      name: tournament.name,
+      year: tournament.year,
+      basePrice: tournament.basePrice || 0,
+      budget: tournament.budget || 0,
+    });
+    
+    const tData: Record<string, any> = {};
+    Object.values(teams).forEach(t => tData[t.id] = { name: t.name, remainingBudget: t.remainingBudget });
+    setEditTeams(tData);
+
+    const pData: Record<string, any> = {};
+    Object.values(players).forEach(p => pData[p.playerId] = { status: p.status, soldPrice: p.soldPrice || 0, soldTo: p.soldTo || "" });
+    setEditPlayers(pData);
+
+    setShowEditMode(true);
+  };
+
   // Set bid amount only (no team required)
   const setBidAmount = async (amount: number) => {
     if (!tournamentId || !auction) return;
-    const newBid = Math.max(0, amount);
+    const newBid = Math.max(tournament.basePrice || 0, amount);
     await update(ref(db, `tournaments/${tournamentId}/auction`), {
       currentBid: newBid,
+      currentBiddingTeam: null,
       status: "live",
     });
   };
@@ -138,6 +250,11 @@ function HostPanelContent() {
     const team = teams[soldTeamId];
     if (!team) return;
 
+    if (team.remainingBudget < soldPrice) {
+      toast.error(`${team.name} only has ₹${team.remainingBudget.toLocaleString()} left!`);
+      return;
+    }
+
     const isMen = currentPlayer.gender === "Men";
     if (isMen && team.menCount >= tournament.menSlots) {
       toast.error(`${team.name} has reached max Men slots!`); return;
@@ -159,7 +276,7 @@ function HostPanelContent() {
     updates[`tournaments/${tournamentId}/teams/${soldTeamId}/${isMen ? "menCount" : "womenCount"}`] = isMen ? newMenCount : newWomenCount;
     const newSold = [...(auction.soldPlayers || []), currentPlayerId];
     updates[`tournaments/${tournamentId}/auction/soldPlayers`] = newSold;
-    updates[`tournaments/${tournamentId}/auction/currentBid`] = 0;
+    updates[`tournaments/${tournamentId}/auction/currentBid`] = tournament.basePrice || 0;
     updates[`tournaments/${tournamentId}/auction/currentBiddingTeam`] = null;
     updates[`tournaments/${tournamentId}/auction/status`] = "paused";
     updates[`tournaments/${tournamentId}/auction/timerSeconds`] = 30;
@@ -212,7 +329,7 @@ function HostPanelContent() {
     updates[`tournaments/${tournamentId}/players/${currentPlayerId}/status`] = "unsold";
     const newUnsold = [...(auction.unsoldPlayers || []), currentPlayerId];
     updates[`tournaments/${tournamentId}/auction/unsoldPlayers`] = newUnsold;
-    updates[`tournaments/${tournamentId}/auction/currentBid`] = 0;
+    updates[`tournaments/${tournamentId}/auction/currentBid`] = tournament.basePrice || 0;
     updates[`tournaments/${tournamentId}/auction/currentBiddingTeam`] = null;
     updates[`tournaments/${tournamentId}/auction/status`] = "paused";
     updates[`tournaments/${tournamentId}/auction/timerSeconds`] = 30;
@@ -270,6 +387,18 @@ function HostPanelContent() {
             </div>
           </div>
           <div className="flex gap-2">
+            <button 
+              onClick={() => setShowEditPasswordModal(true)} 
+              className="text-xs border border-blue-500/50 text-blue-400 px-3 py-1 rounded hover:bg-blue-500/10"
+            >
+              Edit Auction
+            </button>
+            <button 
+              onClick={() => setShowRestartModal(true)} 
+              className="text-xs border border-orange-500/50 text-orange-400 px-3 py-1 rounded hover:bg-orange-500/10"
+            >
+              Restart Auction
+            </button>
             {!confirmEnd ? (
               <button onClick={() => setConfirmEnd(true)} className="text-xs border border-red-500/50 text-red-400 px-3 py-1 rounded hover:bg-red-500/10">End Auction</button>
             ) : (
@@ -523,6 +652,215 @@ function HostPanelContent() {
           </div>
         </div>
       </div>
+
+      {showRestartModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="glass rounded-xl p-8 max-w-md w-full border border-orange-500/30 shadow-[0_0_30px_rgba(249,115,22,0.2)]">
+            <h2 className="text-2xl font-black text-orange-400 mb-2">Restart Auction?</h2>
+            <p className="text-[#b0b8d4] text-sm mb-6">This will reset all bids, team budgets, and player statuses. Please enter the admin password to confirm.</p>
+            <input 
+              type="password" 
+              placeholder="Admin Password"
+              value={restartPassword}
+              onChange={e => setRestartPassword(e.target.value)}
+              className="w-full bg-black/50 border border-orange-500/50 rounded-lg px-4 py-3 text-white mb-6 focus:outline-none focus:border-orange-400"
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => { setShowRestartModal(false); setRestartPassword(""); }}
+                className="flex-1 border border-white/20 text-white py-3 rounded-lg font-bold hover:bg-white/5 transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin";
+                  if (restartPassword !== adminPassword) {
+                    toast.error("Incorrect password!");
+                    return;
+                  }
+                  handleRestartAuction();
+                }}
+                className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-500 shadow-[0_0_15px_rgba(234,88,12,0.4)] transition"
+              >
+                Confirm Restart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditPasswordModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="glass rounded-xl p-8 max-w-md w-full border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+            <h2 className="text-2xl font-black text-blue-400 mb-2">Edit Auction</h2>
+            <p className="text-[#b0b8d4] text-sm mb-6">Enter the admin password to access edit mode.</p>
+            <input 
+              type="password" 
+              placeholder="Admin Password"
+              value={editPassword}
+              onChange={e => setEditPassword(e.target.value)}
+              className="w-full bg-black/50 border border-blue-500/50 rounded-lg px-4 py-3 text-white mb-6 focus:outline-none focus:border-blue-400"
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => { setShowEditPasswordModal(false); setEditPassword(""); }}
+                className="flex-1 border border-white/20 text-white py-3 rounded-lg font-bold hover:bg-white/5 transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin";
+                  if (editPassword !== adminPassword) {
+                    toast.error("Incorrect password!");
+                    return;
+                  }
+                  setShowEditPasswordModal(false);
+                  setEditPassword("");
+                  openEditMode();
+                }}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)] transition"
+              >
+                Enter Edit Mode
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditMode && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col p-4 md:p-8 overflow-hidden animate-fade-in">
+          <div className="glass rounded-2xl flex flex-col w-full max-w-5xl mx-auto h-full border border-[#d4af37]/30 shadow-[0_0_50px_rgba(212,175,55,0.15)] overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <h2 className="text-2xl font-black text-[#d4af37]">Edit Mode</h2>
+              <button onClick={() => setShowEditMode(false)} className="text-[#b0b8d4] hover:text-white bg-white/5 px-4 py-2 rounded-lg font-bold">Close</button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-white/10 bg-black/20 px-6">
+              <button onClick={() => setEditTab("settings")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "settings" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Tournament Settings</button>
+              <button onClick={() => setEditTab("teams")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "teams" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Teams</button>
+              <button onClick={() => setEditTab("players")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "players" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Players</button>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+              
+              {editTab === "settings" && (
+                <div className="max-w-xl mx-auto space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-[#b0b8d4] mb-2">Tournament Name</label>
+                    <input type="text" value={editTournament.name || ""} onChange={e => setEditTournament({...editTournament, name: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-[#b0b8d4] mb-2">Year</label>
+                      <input type="number" value={editTournament.year || ""} onChange={e => setEditTournament({...editTournament, year: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-[#b0b8d4] mb-2">Base Price (₹)</label>
+                      <input type="number" value={editTournament.basePrice || ""} onChange={e => setEditTournament({...editTournament, basePrice: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-[#b0b8d4] mb-2">Default Team Budget (₹)</label>
+                    <input type="number" value={editTournament.budget || ""} onChange={e => setEditTournament({...editTournament, budget: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
+                  </div>
+                  <button onClick={saveTournamentSettings} className="w-full bg-[#d4af37] text-black font-bold py-3 rounded-lg hover:bg-yellow-400 shadow-[0_0_15px_rgba(212,175,55,0.3)]">Save Settings</button>
+                </div>
+              )}
+
+              {editTab === "teams" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.values(teams).map(t => (
+                    <div key={t.id} className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col gap-3">
+                      <div>
+                        <label className="text-xs text-[#b0b8d4]">Team Name</label>
+                        <input type="text" value={editTeams[t.id]?.name || ""} onChange={e => setEditTeams({...editTeams, [t.id]: {...editTeams[t.id], name: e.target.value}})} className="w-full bg-black/60 border border-white/10 rounded p-2 text-sm text-white focus:border-[#d4af37] outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[#b0b8d4]">Remaining Budget (₹)</label>
+                        <input type="number" value={editTeams[t.id]?.remainingBudget || 0} onChange={e => setEditTeams({...editTeams, [t.id]: {...editTeams[t.id], remainingBudget: parseInt(e.target.value) || 0}})} className="w-full bg-black/60 border border-white/10 rounded p-2 text-sm text-white focus:border-[#d4af37] outline-none font-mono" />
+                      </div>
+                      <button onClick={() => saveTeamSettings(t.id)} className="w-full bg-white/10 text-white font-bold py-2 rounded text-sm hover:bg-[#d4af37] hover:text-black transition">Save Team</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {editTab === "players" && (
+                <div className="flex flex-col h-full gap-4">
+                  <input 
+                    type="text" 
+                    placeholder="Search players by name..." 
+                    value={searchPlayer}
+                    onChange={e => setSearchPlayer(e.target.value)}
+                    className="w-full bg-black/40 border border-white/20 rounded-lg p-3 text-white focus:border-[#d4af37] outline-none shrink-0"
+                  />
+                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
+                    {Object.values(players)
+                      .filter(p => p.name.toLowerCase().includes(searchPlayer.toLowerCase()))
+                      .map(p => (
+                      <div key={p.playerId} className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div className="flex-1 min-w-0 w-full text-center md:text-left">
+                          <div className="font-bold truncate">{p.name}</div>
+                          <div className="text-xs text-[#b0b8d4]">{p.gender} • {p.skill}</div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-3 items-end justify-center w-full md:w-auto">
+                          <div className="w-[100px]">
+                            <label className="text-[10px] text-[#b0b8d4]">Status</label>
+                            <select 
+                              value={editPlayers[p.playerId]?.status || "available"} 
+                              onChange={e => setEditPlayers({...editPlayers, [p.playerId]: {...editPlayers[p.playerId], status: e.target.value}})}
+                              className="w-full bg-black/60 border border-white/10 rounded p-1.5 text-xs text-white outline-none"
+                            >
+                              <option value="available">Available</option>
+                              <option value="sold">Sold</option>
+                              <option value="unsold">Unsold</option>
+                            </select>
+                          </div>
+
+                          {editPlayers[p.playerId]?.status === "sold" && (
+                            <>
+                              <div className="w-[120px]">
+                                <label className="text-[10px] text-[#b0b8d4]">Sold To</label>
+                                <select 
+                                  value={editPlayers[p.playerId]?.soldTo || ""} 
+                                  onChange={e => setEditPlayers({...editPlayers, [p.playerId]: {...editPlayers[p.playerId], soldTo: e.target.value}})}
+                                  className="w-full bg-black/60 border border-white/10 rounded p-1.5 text-xs text-white outline-none"
+                                >
+                                  <option value="">Select Team</option>
+                                  {Object.values(teams).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                              </div>
+                              <div className="w-[100px]">
+                                <label className="text-[10px] text-[#b0b8d4]">Price (₹)</label>
+                                <input 
+                                  type="number" 
+                                  value={editPlayers[p.playerId]?.soldPrice || 0} 
+                                  onChange={e => setEditPlayers({...editPlayers, [p.playerId]: {...editPlayers[p.playerId], soldPrice: parseInt(e.target.value) || 0}})}
+                                  className="w-full bg-black/60 border border-white/10 rounded p-1.5 text-xs text-white outline-none font-mono"
+                                />
+                              </div>
+                            </>
+                          )}
+                          
+                          <button onClick={() => savePlayerSettings(p.playerId)} className="bg-white/10 text-white font-bold px-4 py-1.5 rounded text-xs hover:bg-[#d4af37] hover:text-black transition">Save</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

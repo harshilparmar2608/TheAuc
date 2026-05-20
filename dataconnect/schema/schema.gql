@@ -1,0 +1,42 @@
+type User @table {
+  username: String!
+  email: String!
+  passwordHash: String!
+  createdAt: Timestamp!
+  shippingAddress: String
+  phoneNumber: String
+}
+
+type AuctionItem @table {
+  title: String!
+  description: String!
+  startPrice: Float!
+  endTime: Timestamp!
+  createdAt: Timestamp!
+  status: String!
+  imageUrl: String
+  category: String
+  seller: User
+}
+
+type Bid @table {
+  bidAmount: Float!
+  bidTime: Timestamp!
+  bidder: User
+  item: AuctionItem
+}
+
+type Watchlist @table(key: ["user", "item"]) {
+  createdAt: Timestamp!
+  user: User!
+  item: AuctionItem!
+}
+
+type Notification @table {
+  message: String!
+  type: String!
+  isRead: Boolean!
+  createdAt: Timestamp!
+  recipient: User
+  auctionItem: AuctionItem
+}

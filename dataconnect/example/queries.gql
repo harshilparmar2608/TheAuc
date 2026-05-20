@@ -1,0 +1,52 @@
+query GetAllAuctionItems @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  auctionItems(limit: 50, orderBy: [{createdAt: DESC}]) {
+    id
+    title
+    description
+    startPrice
+    endTime
+    status
+    imageUrl
+    category
+    seller {
+      id
+      username
+    }
+  }
+}
+
+query GetMyWatchlist @auth(level: USER) {
+  watchlists(where: {userId: {eq_expr: "auth.uid"}}) {
+    item {
+      id
+      title
+      startPrice
+      endTime
+      status
+    }
+    createdAt
+  }
+}
+
+mutation CreateNewAuctionItem($title: String!, $description: String!, $startPrice: Float!, $endTime: Timestamp!, $category: String, $imageUrl: String) @auth(level: USER) {
+  auctionItem_insert(data: {
+    title: $title,
+    description: $description,
+    startPrice: $startPrice,
+    endTime: $endTime,
+    status: "active",
+    imageUrl: $imageUrl,
+    category: $category,
+    sellerId_expr: "auth.uid",
+    createdAt_expr: "request.time"
+  })
+}
+
+mutation PlaceBid($itemId: UUID!, $bidAmount: Float!) @auth(level: USER) {
+  bid_insert(data: {
+    itemId: $itemId,
+    bidderId_expr: "auth.uid",
+    bidAmount: $bidAmount,
+    bidTime_expr: "request.time"
+  })
+}
