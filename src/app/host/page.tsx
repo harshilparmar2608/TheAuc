@@ -807,7 +807,7 @@ function HostPanelContent() {
                       <div key={p.playerId} className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
                         <div className="flex-1 min-w-0 w-full text-center md:text-left">
                           <div className="font-bold truncate">{p.name}</div>
-                          <div className="text-xs text-[#b0b8d4]">{p.gender} • {p.skill}</div>
+                          <div className="text-xs text-[#b0b8d4]">{p.gender}</div>
                         </div>
                         
                         <div className="flex flex-wrap gap-3 items-end justify-center w-full md:w-auto">
