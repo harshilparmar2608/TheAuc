@@ -420,7 +420,7 @@ export default function Home() {
               display: "inline-block",
             }}>
               <span style={{ color: "#d4af37", fontStyle: "italic", fontSize: "clamp(0.85rem, 2vw, 1.05rem)" }}>
-                The Most Awaited Cricket Event of the Year
+                The Most Awaited Cricket Auction of the Year
               </span>
             </div>
 
@@ -532,13 +532,13 @@ export default function Home() {
                 color: "#d4af37", letterSpacing: "0.2em", textTransform: "uppercase",
                 marginBottom: 12,
               }}>
-                Select Your Tournament
+                Select Your Auction
               </div>
               <h2 style={{
                 fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 900, color: "#fff",
                 margin: 0, lineHeight: 1.2,
               }}>
-                Choose & Enter
+                Enter The Auction
               </h2>
               <p style={{ color: "#b0b8d4", marginTop: 10, fontSize: "0.95rem" }}>
                 Are you a Host or here to watch the live auction?
