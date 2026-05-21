@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Trash2, Plus, ImageIcon, UploadCloud, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, ImageIcon, UploadCloud, ChevronUp, ChevronDown } from "lucide-react";
 
 type GalleryImage = {
   id: string;
@@ -107,27 +107,44 @@ export default function GalleryPage() {
   const handleMoveUp = async (index: number) => {
     if (index === 0) return;
     const current = images[index];
-    const prev = images[index - 1];
+    const above = images[index - 1];
     
-    // Swap timestamps to reorder
-    const temp = current.timestamp;
-    await update(ref(db), {
-      [`gallery/${current.id}/timestamp`]: prev.timestamp + 1, // +1 ensures they don't perfectly tie if they were somehow identical
-      [`gallery/${prev.id}/timestamp`]: temp - 1
-    });
+    // ensure distinct timestamps if they somehow match
+    let newCurrentTs = above.timestamp;
+    let newAboveTs = current.timestamp;
+    if (newCurrentTs === newAboveTs) {
+      newCurrentTs += 1;
+    }
+
+    try {
+      await update(ref(db), {
+        [`gallery/${current.id}/timestamp`]: newCurrentTs,
+        [`gallery/${above.id}/timestamp`]: newAboveTs
+      });
+    } catch (e) {
+      toast.error("Failed to move photo");
+    }
   };
 
   const handleMoveDown = async (index: number) => {
     if (index === images.length - 1) return;
     const current = images[index];
-    const next = images[index + 1];
+    const below = images[index + 1];
     
-    // Swap timestamps to reorder
-    const temp = current.timestamp;
-    await update(ref(db), {
-      [`gallery/${current.id}/timestamp`]: next.timestamp - 1,
-      [`gallery/${next.id}/timestamp`]: temp + 1
-    });
+    let newCurrentTs = below.timestamp;
+    let newBelowTs = current.timestamp;
+    if (newCurrentTs === newBelowTs) {
+      newCurrentTs -= 1;
+    }
+
+    try {
+      await update(ref(db), {
+        [`gallery/${current.id}/timestamp`]: newCurrentTs,
+        [`gallery/${below.id}/timestamp`]: newBelowTs
+      });
+    } catch (e) {
+      toast.error("Failed to move photo");
+    }
   };
 
   const isAdmin = role === "admin" || role === "super-admin";
@@ -206,7 +223,7 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-            {images.map((img, index) => (
+            {images.map(img => (
               <div key={img.id} className="break-inside-avoid relative group">
                 <div className="glass rounded-xl overflow-hidden border border-white/10 transition hover:border-[#d4af37]/30">
                   {/* Image container */}
@@ -232,22 +249,22 @@ export default function GalleryPage() {
                   {/* Admin Controls */}
                   {isAdmin && (
                     <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                      {index > 0 && (
+                      {images.indexOf(img) > 0 && (
                         <button 
-                          onClick={() => handleMoveUp(index)}
-                          className="p-2 bg-blue-500/80 text-white rounded-full hover:bg-blue-500 shadow-lg hover:scale-110 transition-all"
-                          title="Move Earlier (Up)"
+                          onClick={() => handleMoveUp(images.indexOf(img))}
+                          className="p-2 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-[#d4af37] hover:text-black hover:scale-110 shadow-lg transition-all"
+                          title="Move Up"
                         >
-                          <ArrowUp size={16} />
+                          <ChevronUp size={16} />
                         </button>
                       )}
-                      {index < images.length - 1 && (
+                      {images.indexOf(img) < images.length - 1 && (
                         <button 
-                          onClick={() => handleMoveDown(index)}
-                          className="p-2 bg-blue-500/80 text-white rounded-full hover:bg-blue-500 shadow-lg hover:scale-110 transition-all"
-                          title="Move Later (Down)"
+                          onClick={() => handleMoveDown(images.indexOf(img))}
+                          className="p-2 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-[#d4af37] hover:text-black hover:scale-110 shadow-lg transition-all"
+                          title="Move Down"
                         >
-                          <ArrowDown size={16} />
+                          <ChevronDown size={16} />
                         </button>
                       )}
                       <button 
