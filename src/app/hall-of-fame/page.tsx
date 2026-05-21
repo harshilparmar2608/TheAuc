@@ -99,6 +99,11 @@ export default function HallOfFamePage() {
                             <Crown size={26} strokeWidth={1.5} className="text-[#d4af37] shrink-0" />
                             {season.winner || "TBA"}
                           </div>
+                          {(season as any).winnerCaptain && (
+                            <div className="text-xs text-[#d4af37]/80 mt-1.5 font-semibold tracking-wider uppercase">
+                              (C) {(season as any).winnerCaptain}
+                            </div>
+                          )}
                         </div>
 
                         {/* Runner-Up */}
@@ -111,6 +116,11 @@ export default function HallOfFamePage() {
                               <Medal size={22} strokeWidth={1.5} className="text-[#a8a9ad] shrink-0" />
                               {season.runnerUp}
                             </div>
+                            {(season as any).runnerUpCaptain && (
+                              <div className="text-xs text-[#a8a9ad]/80 mt-1.5 font-semibold tracking-wider uppercase">
+                                (C) {(season as any).runnerUpCaptain}
+                              </div>
+                            )}
                           </div>
                         )}
 

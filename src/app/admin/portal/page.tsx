@@ -26,7 +26,9 @@ export default function PortalAdminPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [name, setName] = useState("");
   const [winner, setWinner] = useState("");
+  const [winnerCaptain, setWinnerCaptain] = useState("");
   const [runnerUp, setRunnerUp] = useState("");
+  const [runnerUpCaptain, setRunnerUpCaptain] = useState("");
   const [manOfTheTournament, setManOfTheTournament] = useState("");
   const [manOfTheTournamentRuns, setManOfTheTournamentRuns] = useState(0);
   const [manOfTheTournamentWickets, setManOfTheTournamentWickets] = useState(0);
@@ -102,7 +104,9 @@ export default function PortalAdminPage() {
     setYear(new Date().getFullYear());
     setName("");
     setWinner("");
+    setWinnerCaptain("");
     setRunnerUp("");
+    setRunnerUpCaptain("");
     setManOfTheTournament("");
     setManOfTheTournamentRuns(0);
     setManOfTheTournamentWickets(0);
@@ -129,7 +133,9 @@ export default function PortalAdminPage() {
     setYear(s.year);
     setName(s.name);
     setWinner(s.winner || "");
+    setWinnerCaptain(s.winnerCaptain || "");
     setRunnerUp(s.runnerUp || "");
+    setRunnerUpCaptain(s.runnerUpCaptain || "");
     setManOfTheTournament(s.manOfTheTournament || "");
     setManOfTheTournamentRuns((s as any).manOfTheTournamentRuns || 0);
     setManOfTheTournamentWickets((s as any).manOfTheTournamentWickets || 0);
@@ -172,7 +178,9 @@ export default function PortalAdminPage() {
       year,
       name,
       winner,
+      winnerCaptain,
       runnerUp,
+      runnerUpCaptain,
       manOfTheTournament,
       manOfTheTournamentRuns,
       manOfTheTournamentWickets,
@@ -295,11 +303,13 @@ export default function PortalAdminPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-[#b0b8d4] mb-1">Winner</label>
-                <input type="text" value={winner} onChange={e => setWinner(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded p-2 text-sm text-white" />
+                <input type="text" placeholder="Team Name" value={winner} onChange={e => setWinner(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded p-2 text-sm text-white mb-2" />
+                <input type="text" placeholder="Captain Name (optional)" value={winnerCaptain} onChange={e => setWinnerCaptain(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded p-2 text-sm text-white" />
               </div>
               <div>
                 <label className="block text-xs text-[#b0b8d4] mb-1">Runner Up</label>
-                <input type="text" value={runnerUp} onChange={e => setRunnerUp(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded p-2 text-sm text-white" />
+                <input type="text" placeholder="Team Name" value={runnerUp} onChange={e => setRunnerUp(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded p-2 text-sm text-white mb-2" />
+                <input type="text" placeholder="Captain Name (optional)" value={runnerUpCaptain} onChange={e => setRunnerUpCaptain(e.target.value)} className="w-full bg-black/50 border border-white/20 rounded p-2 text-sm text-white" />
               </div>
             </div>
 
@@ -420,11 +430,17 @@ export default function PortalAdminPage() {
                   <div className="space-y-2 mt-4 text-sm">
                     <div className="flex justify-between border-b border-white/5 pb-1">
                       <span className="text-[#b0b8d4]">Winner:</span>
-                      <span className="font-semibold text-white">{s.winner || "-"}</span>
+                      <span className="font-semibold text-white text-right">
+                        {s.winner || "-"}
+                        {s.winnerCaptain && <span className="block text-[#b0b8d4] text-xs font-normal mt-0.5">(C: {s.winnerCaptain})</span>}
+                      </span>
                     </div>
                     <div className="flex justify-between border-b border-white/5 pb-1">
                       <span className="text-[#b0b8d4]">Runner Up:</span>
-                      <span className="text-white">{s.runnerUp || "-"}</span>
+                      <span className="text-white text-right">
+                        {s.runnerUp || "-"}
+                        {s.runnerUpCaptain && <span className="block text-[#b0b8d4] text-xs mt-0.5">(C: {s.runnerUpCaptain})</span>}
+                      </span>
                     </div>
                     <div className="flex justify-between border-b border-white/5 pb-1">
                       <span className="text-[#b0b8d4]">Man of Tournament:</span>

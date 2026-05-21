@@ -80,7 +80,9 @@ export interface Season {
   year: number;
   name: string; // e.g., "GJPL 1"
   winner: string;
+  winnerCaptain?: string;
   runnerUp: string;
+  runnerUpCaptain?: string;
   manOfTheTournament: string;
   topScorer: SeasonTopPlayer;
   topWicketTaker: SeasonTopPlayer;
