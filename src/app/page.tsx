@@ -420,7 +420,7 @@ export default function Home() {
               display: "inline-block",
             }}>
               <span style={{ color: "#d4af37", fontStyle: "italic", fontSize: "clamp(0.85rem, 2vw, 1.05rem)" }}>
-                The Most Awaited Cricket Auction of the Year
+                The Most Awaited Cricket Event of the Year
               </span>
             </div>
 
