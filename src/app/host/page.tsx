@@ -7,6 +7,7 @@ import { ref, onValue, update } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { Tournament, Team, Player, AuctionState, IncrementRule } from "@/types";
 import toast from "react-hot-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 function HostPanelContent() {
   const router = useRouter();
@@ -20,9 +21,8 @@ function HostPanelContent() {
   const [loading, setLoading] = useState(true);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [showRestartModal, setShowRestartModal] = useState(false);
-  const [restartPassword, setRestartPassword] = useState("");
+  const [restartConfirmPhrase, setRestartConfirmPhrase] = useState("");
   const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
-  const [editPassword, setEditPassword] = useState("");
   const [showEditMode, setShowEditMode] = useState(false);
   const [editTab, setEditTab] = useState<"settings" | "teams" | "players" | "rules">("settings");
   const [searchPlayer, setSearchPlayer] = useState("");
@@ -42,12 +42,14 @@ function HostPanelContent() {
     return sorted[sorted.length - 1].increment;
   };
 
+  const { role, loading: authLoading } = useAuth();
+
   useEffect(() => {
-    if (sessionStorage.getItem("gjpl_admin_auth") !== "true") {
-      router.push(`/admin${tournamentId ? `?tournament=${tournamentId}` : ""}`);
+    if (!authLoading && (role === "guest" || role === "none")) {
+      router.push(`/`);
       return;
     }
-    if (!tournamentId) return;
+    if (authLoading || role === "guest" || role === "none" || !tournamentId) return;
 
     const unsubscribe = onValue(ref(db, `tournaments/${tournamentId}`), (snap) => {
       const data = snap.val();
@@ -60,7 +62,7 @@ function HostPanelContent() {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [tournamentId, router]);
+  }, [tournamentId, router, role, authLoading]);
 
   // Server-side timer tick
   useEffect(() => {
@@ -76,6 +78,7 @@ function HostPanelContent() {
     return () => clearInterval(interval);
   }, [auction?.timerRunning, auction?.timerSeconds, tournamentId]);
 
+  if (authLoading || role === "guest" || role === "none") return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37]" /></div>;
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37]" /></div>;
   if (!tournament) return <div className="p-8 text-center text-white">Tournament not found</div>;
 
@@ -113,7 +116,7 @@ function HostPanelContent() {
       timerSeconds: 30,
       timerRunning: false,
     });
-    toast.success("Auction started! Players shuffled randomly 🎲");
+    toast.success("Auction started! Players shuffled randomly ");
   };
 
   const handleEndAuction = async () => {
@@ -162,9 +165,9 @@ function HostPanelContent() {
     });
 
     await update(ref(db), updates);
-    toast.success("Auction restarted! Players reshuffled randomly 🎲");
+    toast.success("Auction restarted! Players reshuffled randomly ");
     setShowRestartModal(false);
-    setRestartPassword("");
+    setRestartConfirmPhrase("");
   };
 
   const saveTournamentSettings = async () => {
@@ -360,7 +363,7 @@ function HostPanelContent() {
     });
 
     if (allFull) {
-      toast.success("🏆 All teams complete! Ending auction...", { duration: 3000 });
+      toast.success(" All teams complete! Ending auction...", { duration: 3000 });
 
       // Mark every remaining available player as unsold
       const remaining = Object.values(players).filter(
@@ -430,7 +433,7 @@ function HostPanelContent() {
             onClick={handleStartAuction}
             className="w-full bg-gradient-to-r from-[#d4af37] to-yellow-500 text-[#0a0e27] py-4 rounded-xl font-black text-xl shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:shadow-[0_0_50px_rgba(212,175,55,0.8)] transition-all"
           >
-            🏏 Begin Auction
+            Begin Auction
           </button>
         </div>
       </div>
@@ -484,17 +487,17 @@ function HostPanelContent() {
           return (
             <div className="glass rounded-xl px-6 py-3 flex items-center justify-around gap-4 text-center">
               <div>
-                <div className="text-xs text-[#b0b8d4] uppercase tracking-wider mb-1">👨 Men Pending</div>
+                <div className="text-xs text-[#b0b8d4] uppercase tracking-wider mb-1">Men Pending</div>
                 <div className="text-2xl font-black text-blue-400">{pendingMen}</div>
               </div>
               <div className="w-px h-10 bg-white/10" />
               <div>
-                <div className="text-xs text-[#b0b8d4] uppercase tracking-wider mb-1">👩 Women Pending</div>
+                <div className="text-xs text-[#b0b8d4] uppercase tracking-wider mb-1">Women Pending</div>
                 <div className="text-2xl font-black text-pink-400">{pendingWomen}</div>
               </div>
               <div className="w-px h-10 bg-white/10" />
               <div>
-                <div className="text-xs text-[#b0b8d4] uppercase tracking-wider mb-1">🏏 Total Left</div>
+                <div className="text-xs text-[#b0b8d4] uppercase tracking-wider mb-1">Total Left</div>
                 <div className="text-2xl font-black text-[#d4af37]">{pendingMen + pendingWomen}</div>
               </div>
             </div>
@@ -518,7 +521,7 @@ function HostPanelContent() {
             </>
           ) : (
             <div className="w-full text-center py-6 text-[#b0b8d4]">
-              <div className="text-4xl mb-2">🏆</div>
+              
               <div className="text-lg font-bold text-white mb-1">All players done!</div>
               <div className="text-sm text-[#b0b8d4] mb-5">
                 {Object.values(players).some(p => p.status === "unsold")
@@ -529,7 +532,7 @@ function HostPanelContent() {
                 onClick={handleEndAuction}
                 className="bg-gradient-to-r from-[#d4af37] to-yellow-400 text-[#0a0e27] px-8 py-3 rounded-xl font-black text-lg shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_40px_rgba(212,175,55,0.8)] transition-all"
               >
-                {Object.values(players).some(p => p.status === "unsold") ? "🎲 Begin Chit Round" : "🎨 Assign Team Colors"}
+                {Object.values(players).some(p => p.status === "unsold") ? " Begin Chit Round" : "Assign Team Colors"}
               </button>
             </div>
           )}
@@ -636,14 +639,14 @@ function HostPanelContent() {
             disabled={!currentPlayer || !auction.currentBiddingTeam}
             className="col-span-1 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(22,163,74,0.4)] transition"
           >
-            ✅ SOLD
+            SOLD
           </button>
           <button
             onClick={handleUnsold}
             disabled={!currentPlayer}
             className="col-span-1 bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl text-lg shadow-[0_0_15px_rgba(234,88,12,0.4)] transition"
           >
-            ❌ UNSOLD
+            UNSOLD
           </button>
           <div className="glass rounded-xl p-3 flex flex-col items-center justify-center">
             <div className="text-2xl font-mono font-bold">
@@ -663,7 +666,7 @@ function HostPanelContent() {
 
         {/* Live Purse */}
         <div className="glass rounded-xl p-5 flex-1">
-          <h3 className="text-lg font-bold text-[#d4af37] mb-3">💰 Live Purse</h3>
+          <h3 className="text-lg font-bold text-[#d4af37] mb-3">Live Purse</h3>
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-[#b0b8d4] border-b border-white/10">
@@ -692,7 +695,7 @@ function HostPanelContent() {
         <div className="glass rounded-xl p-5">
           <h3 className="text-sm font-bold text-[#b0b8d4] mb-3 uppercase tracking-wider">Up Next</h3>
           <div className="flex flex-col items-center justify-center py-6 gap-2 text-[#4a5568]">
-            <div className="text-4xl">🔒</div>
+            
             <div className="text-sm font-semibold">Secret</div>
             <div className="text-xs text-center max-w-[180px]">Player order is randomised and hidden</div>
           </div>
@@ -724,26 +727,25 @@ function HostPanelContent() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="glass rounded-xl p-8 max-w-md w-full border border-orange-500/30 shadow-[0_0_30px_rgba(249,115,22,0.2)]">
             <h2 className="text-2xl font-black text-orange-400 mb-2">Restart Auction?</h2>
-            <p className="text-[#b0b8d4] text-sm mb-6">This will reset all bids, team budgets, and player statuses. Please enter the admin password to confirm.</p>
+            <p className="text-[#b0b8d4] text-sm mb-6">This will reset all bids, team budgets, and player statuses. Type "RESTART" to confirm.</p>
             <input 
-              type="password" 
-              placeholder="Admin Password"
-              value={restartPassword}
-              onChange={e => setRestartPassword(e.target.value)}
+              type="text" 
+              placeholder="Type RESTART"
+              value={restartConfirmPhrase}
+              onChange={e => setRestartConfirmPhrase(e.target.value)}
               className="w-full bg-black/50 border border-orange-500/50 rounded-lg px-4 py-3 text-white mb-6 focus:outline-none focus:border-orange-400"
             />
             <div className="flex gap-3">
               <button 
-                onClick={() => { setShowRestartModal(false); setRestartPassword(""); }}
+                onClick={() => { setShowRestartModal(false); setRestartConfirmPhrase(""); }}
                 className="flex-1 border border-white/20 text-white py-3 rounded-lg font-bold hover:bg-white/5 transition"
               >
                 Cancel
               </button>
               <button 
                 onClick={() => {
-                  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin";
-                  if (restartPassword !== adminPassword) {
-                    toast.error("Incorrect password!");
+                  if (restartConfirmPhrase !== "RESTART") {
+                    toast.error("Please type RESTART to confirm.");
                     return;
                   }
                   handleRestartAuction();
@@ -760,31 +762,18 @@ function HostPanelContent() {
       {showEditPasswordModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="glass rounded-xl p-8 max-w-md w-full border border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-            <h2 className="text-2xl font-black text-blue-400 mb-2">Edit Auction</h2>
-            <p className="text-[#b0b8d4] text-sm mb-6">Enter the admin password to access edit mode.</p>
-            <input 
-              type="password" 
-              placeholder="Admin Password"
-              value={editPassword}
-              onChange={e => setEditPassword(e.target.value)}
-              className="w-full bg-black/50 border border-blue-500/50 rounded-lg px-4 py-3 text-white mb-6 focus:outline-none focus:border-blue-400"
-            />
+            <h2 className="text-2xl font-black text-blue-400 mb-2">Enter Edit Mode</h2>
+            <p className="text-[#b0b8d4] text-sm mb-6">You are about to edit tournament data directly.</p>
             <div className="flex gap-3">
               <button 
-                onClick={() => { setShowEditPasswordModal(false); setEditPassword(""); }}
+                onClick={() => setShowEditPasswordModal(false)}
                 className="flex-1 border border-white/20 text-white py-3 rounded-lg font-bold hover:bg-white/5 transition"
               >
                 Cancel
               </button>
               <button 
                 onClick={() => {
-                  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin";
-                  if (editPassword !== adminPassword) {
-                    toast.error("Incorrect password!");
-                    return;
-                  }
                   setShowEditPasswordModal(false);
-                  setEditPassword("");
                   openEditMode();
                 }}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)] transition"
@@ -967,7 +956,7 @@ function HostPanelContent() {
                   </div>
 
                   <div className="p-3 bg-[#d4af37]/5 border border-[#d4af37]/20 rounded-xl">
-                    <p className="text-xs text-[#d4af37] font-semibold mb-1">📊 Current Preview</p>
+                    <p className="text-xs text-[#d4af37] font-semibold mb-1">Current Preview</p>
                     <p className="text-xs text-[#b0b8d4]">
                       {editRules.map((r, i) => {
                         const prev = i === 0 ? (tournament?.basePrice || 0) : (editRules[i-1].upTo ?? 0);

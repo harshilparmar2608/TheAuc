@@ -3,6 +3,16 @@ export interface IncrementRule {
   increment: number;     // amount added to bid when this tier applies
 }
 
+export type Role = "super-admin" | "admin" | "guest" | "none";
+
+export type AdminUser = {
+  id: string;
+  username: string;
+  password?: string; // used when updating/setting; don't return to client unless checking
+  role: "super-admin" | "admin";
+  createdAt: number;
+};
+
 export interface Tournament {
   id: string;
   name: string;

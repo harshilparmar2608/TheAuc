@@ -123,7 +123,7 @@ function ColorAssignmentContent() {
   return (
     <main className="min-h-screen p-8 flex flex-col items-center justify-center">
       <div className="w-full max-w-4xl glass rounded-xl p-10 text-center animate-fade-in">
-        <h1 className="text-4xl font-black text-[#d4af37] mb-2 tracking-widest uppercase">🎨 Team Colors</h1>
+        <h1 className="text-4xl font-black text-[#d4af37] mb-2 tracking-widest uppercase">Team Colors</h1>
         <p className="text-[#b0b8d4] mb-10 text-sm">Assign colors randomly, or pick manually using the color wheel for each team.</p>
 
         {/* Team color grid */}
@@ -162,26 +162,26 @@ function ColorAssignmentContent() {
             <div className="flex flex-wrap justify-center gap-4">
               <button onClick={handleAssignColors} disabled={assigning}
                 className="bg-[#d4af37] text-black px-8 py-3 rounded-full font-black text-lg hover:bg-yellow-400 transition transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-[0_0_20px_rgba(212,175,55,0.5)]">
-                {assigning ? "Spinning..." : "🎲 Assign Randomly"}
+                {assigning ? "Spinning..." : "Assign Randomly"}
               </button>
               <button onClick={handleSaveManualColors}
                 className="border-2 border-[#d4af37] text-[#d4af37] px-8 py-3 rounded-full font-black text-lg hover:bg-[#d4af37]/10 transition">
-                ✅ Save Manual Colors
+                Save Manual Colors
               </button>
             </div>
           ) : (
             <div className="flex flex-wrap justify-center gap-4">
               <button onClick={handleSaveManualColors}
                 className="border-2 border-[#d4af37] text-[#d4af37] px-6 py-2 rounded-full font-bold hover:bg-[#d4af37]/10 transition text-sm">
-                🖌️ Update Colors
+                Update Colors
               </button>
               <button onClick={handleDownloadExcel}
                 className="bg-green-600 text-white px-8 py-3 rounded-full font-bold hover:bg-green-500 transition shadow-[0_0_20px_rgba(22,163,74,0.5)]">
-                📥 Download Excel
+                Download Excel
               </button>
               <button onClick={handleFinish}
                 className="bg-[#d4af37] text-black px-8 py-3 rounded-full font-bold hover:bg-yellow-400 transition shadow-[0_0_20px_rgba(212,175,55,0.5)]">
-                🏁 Finish Tournament
+                Finish Tournament
               </button>
             </div>
           )}

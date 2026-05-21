@@ -7,18 +7,20 @@ import { db } from "@/lib/firebase";
 import { Team, Player, IncrementRule } from "@/types";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
+import { useAuth } from "@/hooks/useAuth";
 
 
 export default function SetupPage() {
   const router = useRouter();
+  const { role, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem("gjpl_admin_auth") !== "true") {
-      router.push("/admin");
+    if (!authLoading && (role === "guest" || role === "none")) {
+      router.push("/");
     }
-  }, [router]);
+  }, [router, role, authLoading]);
 
   // Step 1: Basics
   const [name, setName] = useState("");
@@ -203,8 +205,8 @@ export default function SetupPage() {
         updatedAt: Date.now()
       });
 
-      toast.success("Tournament created successfully!");
-      router.push(`/admin?tournament=${tournamentId}`);
+      toast.success("Tournament setup complete!");
+      router.push(`/host?tournament=${tournamentId}`);
     } catch (error) {
       console.error(error);
       toast.error("Error creating tournament");
@@ -213,9 +215,13 @@ export default function SetupPage() {
     }
   };
 
+  if (authLoading || role === "guest" || role === "none") {
+    return <div className="min-h-screen bg-[#0a0e27] flex items-center justify-center text-[#d4af37]">Loading...</div>;
+  }
+
   return (
-    <main className="min-h-screen p-8 flex flex-col items-center pb-24">
-      <div className="w-full max-w-4xl glass rounded-xl p-8 animate-fade-in">
+    <main className="min-h-screen p-4 md:p-8 flex flex-col items-center pb-24">
+      <div className="w-full max-w-4xl glass rounded-xl p-4 md:p-8 animate-fade-in">
         <div className="flex justify-between items-center mb-8 border-b border-[#d4af37]/30 pb-4">
           <h1 className="text-3xl font-bold text-[#d4af37]">Tournament Setup</h1>
           <span className="text-[#b0b8d4]">Step {step} of 6</span>
@@ -263,11 +269,13 @@ export default function SetupPage() {
                 {incrementRules.map((rule, idx) => {
                   const isLast = idx === incrementRules.length - 1;
                   return (
-                    <div key={idx} className="flex items-center gap-3 bg-black/30 border border-white/10 rounded-xl px-4 py-3">
-                      <div className="w-6 h-6 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 flex items-center justify-center text-xs font-bold text-[#d4af37] shrink-0">
-                        {idx + 1}
+                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-black/30 border border-white/10 rounded-xl p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 flex items-center justify-center text-xs font-bold text-[#d4af37] shrink-0">
+                          {idx + 1}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-3 flex-1 items-center">
+                      <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-[#b0b8d4] whitespace-nowrap">Bid below ₹</span>
                           {isLast ? (
@@ -277,7 +285,7 @@ export default function SetupPage() {
                               type="number"
                               value={rule.upTo ?? ""}
                               onChange={e => updateIncrementRule(idx, "upTo", parseInt(e.target.value) || 0)}
-                              className="w-28 bg-black/50 border border-[#d4af37]/40 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#d4af37] font-mono"
+                              className="w-full sm:w-28 bg-black/50 border border-[#d4af37]/40 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#d4af37] font-mono"
                             />
                           )}
                         </div>
@@ -287,16 +295,16 @@ export default function SetupPage() {
                             type="number"
                             value={rule.increment}
                             onChange={e => updateIncrementRule(idx, "increment", parseInt(e.target.value) || 0)}
-                            className="w-28 bg-black/50 border border-[#d4af37]/40 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#d4af37] font-mono"
+                            className="w-full sm:w-28 bg-black/50 border border-[#d4af37]/40 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#d4af37] font-mono"
                           />
                         </div>
                       </div>
                       {!isLast && incrementRules.length > 1 && (
                         <button
                           onClick={() => removeIncrementRule(idx)}
-                          className="text-red-400 hover:text-red-300 text-lg leading-none shrink-0"
+                          className="text-red-400 hover:text-red-300 text-sm font-bold bg-red-500/10 px-2 py-1 rounded w-full sm:w-auto shrink-0 mt-2 sm:mt-0"
                           title="Remove tier"
-                        >×</button>
+                        >Remove</button>
                       )}
                     </div>
                   );
@@ -305,7 +313,7 @@ export default function SetupPage() {
 
               {/* Preview */}
               <div className="mt-3 p-3 bg-[#d4af37]/5 border border-[#d4af37]/20 rounded-xl">
-                <p className="text-xs text-[#d4af37] font-semibold mb-1">📊 Preview</p>
+                <p className="text-xs text-[#d4af37] font-semibold mb-1">Preview</p>
                 <p className="text-xs text-[#b0b8d4]">
                   {incrementRules.map((r, i) => {
                     const prev = i === 0 ? playerBasePrice : (incrementRules[i-1].upTo ?? 0);

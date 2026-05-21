@@ -85,7 +85,7 @@ function UnsoldChitContent() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-black text-[#d4af37] tracking-widest uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.5)]">
-            🎲 Chit Round
+            Chit Round
           </h1>
           <p className="text-[#b0b8d4] mt-2 text-sm">
             {chitList.length} unsold player{chitList.length !== 1 ? "s" : ""} · {assignedCount} assigned
@@ -130,14 +130,14 @@ function UnsoldChitContent() {
                   }`}>
                 {!isRevealed ? (
                   <>
-                    <div className="text-4xl mb-2 animate-bounce">📜</div>
+                    
                     <div className="text-[#b0b8d4] text-xs font-bold">Chit #{idx + 1}</div>
                     {selectedTeamId && <div className="text-[#4a5568] text-[10px] mt-1">click to open</div>}
                   </>
                 ) : (
                   <>
                     <div className={`text-3xl mb-2 ${player.gender === "Men" ? "text-blue-400" : "text-pink-400"}`}>
-                      {player.gender === "Men" ? "👨" : "👩"}
+                      {player.gender === "Men" ? "Men " : "Women "}
                     </div>
                     <div className="font-black text-white text-center text-xs leading-tight">{player.name}</div>
                     <div className={`text-[9px] mt-1 px-2 py-0.5 rounded font-bold ${player.gender === "Men" ? "bg-blue-500/20 text-blue-300" : "bg-pink-500/20 text-pink-300"}`}>
@@ -158,7 +158,7 @@ function UnsoldChitContent() {
           {allAssigned && (
             <button onClick={() => router.push(`/colors?tournament=${tournamentId}`)}
               className="bg-gradient-to-r from-[#d4af37] to-yellow-400 text-[#0a0e27] px-10 py-4 rounded-full font-black text-xl shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_45px_rgba(212,175,55,0.9)] transition-all hover:scale-105 animate-fade-in">
-              🎨 Assign Team Colors
+              Assign Team Colors
             </button>
           )}
           <button onClick={() => router.push(`/colors?tournament=${tournamentId}`)}

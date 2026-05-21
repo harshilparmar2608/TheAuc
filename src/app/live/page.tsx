@@ -90,18 +90,18 @@ function LiveAuctionContent() {
   const currentPlayer = displayPlayerId ? players[displayPlayerId] : null;
 
   return (
-    <div className="h-screen w-full bg-[#0a0e27] overflow-hidden flex flex-col font-sans text-white">
+    <div className="min-h-screen md:h-screen w-full bg-[#0a0e27] md:overflow-hidden flex flex-col font-sans text-white">
       {/* TOP BANNER */}
-      <div className="h-[10%] border-b border-[#d4af37]/30 flex items-center justify-between px-8 bg-black/40">
+      <div className="h-auto md:h-[10%] border-b border-[#d4af37]/30 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-0 bg-black/40 gap-4 md:gap-0">
         <div className="flex items-center gap-4">
           <div className="relative w-[60px] h-[60px]">
              <Image src="/logo.png" alt="Logo" fill sizes="60px" className="object-contain" />
           </div>
         </div>
-        <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#d4af37] to-yellow-200 tracking-widest uppercase">
+        <h1 className="text-2xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#d4af37] to-yellow-200 tracking-widest uppercase text-center">
           {tournament.name} {tournament.year}
         </h1>
-        <div className="flex items-center gap-3 bg-black/50 px-6 py-2 rounded-full border border-white/10">
+        <div className="flex items-center gap-2 md:gap-3 bg-black/50 px-4 md:px-6 py-2 rounded-full border border-white/10 text-xs md:text-base">
           <span className="flex h-4 w-4 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff3333] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-4 w-4 bg-[#ff3333]"></span>
@@ -113,7 +113,7 @@ function LiveAuctionContent() {
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <div className="h-[70%] flex relative">
+      <div className="flex-1 md:h-[70%] flex flex-col md:flex-row relative">
         
         {/* SOLD / UNSOLD OVERLAYS */}
         {soldAnim && animPlayerId && (() => {
@@ -147,7 +147,7 @@ function LiveAuctionContent() {
         )}
 
         {/* Center Column */}
-        <div className="w-[65%] flex flex-col items-center justify-center p-8 relative">
+        <div className="w-full md:w-[65%] flex flex-col items-center justify-center p-4 md:p-8 relative min-h-[50vh] md:min-h-0">
           {currentPlayer ? (
             <div className="glass w-full max-w-4xl h-full rounded-3xl p-8 flex flex-col items-center justify-between relative overflow-hidden">
               
@@ -191,7 +191,7 @@ function LiveAuctionContent() {
             return (
               <div className="w-full h-full flex flex-col p-4 overflow-hidden">
                 <div className="text-center mb-4">
-                  <div className="text-3xl font-black text-[#d4af37] tracking-widest uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.6)]">🎲 Chit Round</div>
+                  <div className="text-3xl font-black text-[#d4af37] tracking-widest uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.6)]">Chit Round</div>
                   <div className="text-sm text-[#b0b8d4] mt-1">{assignedCount}/{chitPlayers.length} chits revealed</div>
                   <div className="h-1 bg-white/10 rounded-full mt-2 max-w-[200px] mx-auto overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-[#d4af37] to-yellow-300 rounded-full transition-all duration-700"
@@ -212,13 +212,13 @@ function LiveAuctionContent() {
                           }`}>
                           {!isRevealed ? (
                             <>
-                              <div className="text-3xl mb-1">📜</div>
+                              
                               <div className="text-[#b0b8d4] text-[10px] font-bold">Chit #{idx + 1}</div>
                             </>
                           ) : (
                             <>
                               <div className={`text-2xl mb-1 ${player.gender === "Men" ? "text-blue-400" : "text-pink-400"}`}>
-                                {player.gender === "Men" ? "👨" : "👩"}
+                                {player.gender === "Men" ? "Men " : "Women "}
                               </div>
                               <div className="font-black text-white text-center text-[10px] leading-tight">{player.name}</div>
                               <div className={`text-[8px] mt-0.5 px-1.5 py-0.5 rounded font-bold ${
@@ -245,7 +245,7 @@ function LiveAuctionContent() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-[35%] bg-black/40 border-l border-white/10 p-6 flex flex-col">
+        <div className="w-full md:w-[35%] bg-black/40 border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 flex flex-col min-h-[40vh] md:min-h-0">
           <h3 className="text-2xl font-bold text-[#d4af37] mb-6 tracking-widest uppercase flex items-center justify-between">
             <span>Live Purse</span>
             <span className="text-sm font-normal text-white/50 bg-white/5 px-3 py-1 rounded">M / W Slots</span>
@@ -259,7 +259,7 @@ function LiveAuctionContent() {
                   <div className="text-[#d4af37] font-mono text-xl">₹{t.remainingBudget.toLocaleString()}</div>
                 </div>
                 <div className="text-right text-sm text-[#b0b8d4] font-mono bg-white/5 px-3 py-2 rounded">
-                  👨 {t.menCount}/{tournament.menSlots} <br/> 👩 {t.womenCount}/{tournament.womenSlots}
+                  Men  {t.menCount}/{tournament.menSlots} <br/> Women  {t.womenCount}/{tournament.womenSlots}
                 </div>
               </div>
             ))}
@@ -268,7 +268,7 @@ function LiveAuctionContent() {
       </div>
 
       {/* BOTTOM TICKER */}
-      <div className="h-[20%] bg-black/80 border-t border-[#d4af37]/30 p-4 flex flex-col justify-center relative overflow-hidden">
+      <div className="h-auto md:h-[20%] bg-black/80 border-t border-[#d4af37]/30 p-4 flex flex-col justify-center relative overflow-hidden mt-auto">
         <div className="absolute top-0 left-0 bg-[#d4af37] text-black text-xs font-bold px-4 py-1 rounded-br-lg z-10 tracking-widest uppercase">
           Recently Sold
         </div>
