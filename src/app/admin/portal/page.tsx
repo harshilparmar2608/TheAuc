@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import toast from "react-hot-toast";
 import { Season, AdminUser } from "@/types";
 import Link from "next/link";
-import { Trophy, Pencil, Trash2, Key, Users } from "lucide-react";
+import { Trophy, Pencil, Trash2, Key, Users, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function PortalAdminPage() {
@@ -277,6 +277,19 @@ export default function PortalAdminPage() {
             <Users size={18} /> Access Management
           </button>
         )}
+        <div className="flex-1" />
+        <Link 
+          href="/host"
+          className="px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition bg-white/10 hover:bg-white/20 text-white"
+        >
+          <Trophy size={18} /> Go to Live Host
+        </Link>
+        <Link 
+          href="/setup"
+          className="px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition bg-[#d4af37] hover:bg-yellow-400 text-black shadow-[0_0_15px_rgba(212,175,55,0.4)]"
+        >
+          <Settings size={18} /> Setup Live Auction
+        </Link>
       </div>
 
       {activeTab === "seasons" ? (
