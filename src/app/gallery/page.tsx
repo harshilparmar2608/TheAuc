@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ref, onValue, push, set, remove } from "firebase/database";
+import { ref, onValue, push, set, remove, update } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Trash2, Plus, ImageIcon, UploadCloud } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, ImageIcon, UploadCloud, ArrowUp, ArrowDown } from "lucide-react";
 
 type GalleryImage = {
   id: string;
@@ -104,6 +104,32 @@ export default function GalleryPage() {
     }
   };
 
+  const handleMoveUp = async (index: number) => {
+    if (index === 0) return;
+    const current = images[index];
+    const prev = images[index - 1];
+    
+    // Swap timestamps to reorder
+    const temp = current.timestamp;
+    await update(ref(db), {
+      [`gallery/${current.id}/timestamp`]: prev.timestamp + 1, // +1 ensures they don't perfectly tie if they were somehow identical
+      [`gallery/${prev.id}/timestamp`]: temp - 1
+    });
+  };
+
+  const handleMoveDown = async (index: number) => {
+    if (index === images.length - 1) return;
+    const current = images[index];
+    const next = images[index + 1];
+    
+    // Swap timestamps to reorder
+    const temp = current.timestamp;
+    await update(ref(db), {
+      [`gallery/${current.id}/timestamp`]: next.timestamp - 1,
+      [`gallery/${next.id}/timestamp`]: temp + 1
+    });
+  };
+
   const isAdmin = role === "admin" || role === "super-admin";
 
   return (
@@ -180,7 +206,7 @@ export default function GalleryPage() {
           </div>
         ) : (
           <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-            {images.map(img => (
+            {images.map((img, index) => (
               <div key={img.id} className="break-inside-avoid relative group">
                 <div className="glass rounded-xl overflow-hidden border border-white/10 transition hover:border-[#d4af37]/30">
                   {/* Image container */}
@@ -203,15 +229,35 @@ export default function GalleryPage() {
                     <p className="text-xs text-[#b0b8d4]">{new Date(img.timestamp).toLocaleDateString()}</p>
                   </div>
 
-                  {/* Admin Delete Button */}
+                  {/* Admin Controls */}
                   {isAdmin && (
-                    <button 
-                      onClick={() => handleDelete(img.id)}
-                      className="absolute top-3 right-3 p-2 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:scale-110 shadow-lg"
-                      title="Delete Photo"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                      {index > 0 && (
+                        <button 
+                          onClick={() => handleMoveUp(index)}
+                          className="p-2 bg-blue-500/80 text-white rounded-full hover:bg-blue-500 shadow-lg hover:scale-110 transition-all"
+                          title="Move Earlier (Up)"
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                      )}
+                      {index < images.length - 1 && (
+                        <button 
+                          onClick={() => handleMoveDown(index)}
+                          className="p-2 bg-blue-500/80 text-white rounded-full hover:bg-blue-500 shadow-lg hover:scale-110 transition-all"
+                          title="Move Later (Down)"
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDelete(img.id)}
+                        className="p-2 bg-red-500/80 text-white rounded-full hover:bg-red-500 hover:scale-110 shadow-lg transition-all"
+                        title="Delete Photo"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
