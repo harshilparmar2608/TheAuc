@@ -630,7 +630,10 @@ function HostPanelContent() {
                       ₹{nextBid.toLocaleString()}
                     </div>
                   )}
-                  <div className="font-bold text-sm truncate mt-1">{team.name}</div>
+                  <div className="font-bold text-sm truncate mt-1 flex items-center gap-1">
+                    <span>{team.name}</span>
+                    {team.group && <span className="text-[9px] px-1 py-0.5 bg-white/10 rounded tracking-widest text-white/70">{team.group.replace("Group ", "")}</span>}
+                  </div>
                   <div className="text-[#d4af37] font-mono text-xs mt-0.5">₹{team.remainingBudget.toLocaleString()}</div>
                   <div className="text-[#b0b8d4] text-[10px]">{team.menCount}M / {team.womenCount}W</div>
                 </button>

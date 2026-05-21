@@ -24,6 +24,7 @@ export interface Tournament {
   logo: string;
   colors?: string[];
   colorAssignmentStatus: "pending" | "assigned";
+  groupCount?: number;
   basePrice: number;
   incrementRules?: IncrementRule[];   // tiered bid increment config
   createdAt: number;
@@ -35,6 +36,7 @@ export interface Team {
   name: string;
   captain: string;
   color: string | null;
+  group?: string;
   budget: number;
   remainingBudget: number;
   menCount: number;

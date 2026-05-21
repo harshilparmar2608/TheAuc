@@ -65,6 +65,7 @@ export default function SetupPage() {
   const [menSlots, setMenSlots] = useState(5);
   const [womenSlots, setWomenSlots] = useState(3);
   const [teamCount, setTeamCount] = useState(6);
+  const [groupCount, setGroupCount] = useState(1);
 
   // Step 3: Colors
   const [colors, setColors] = useState<string[]>([]);
@@ -153,6 +154,7 @@ export default function SetupPage() {
         logo,
         colors,
         colorAssignmentStatus: "pending",
+        groupCount,
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -333,18 +335,22 @@ export default function SetupPage() {
         {step === 2 && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold mb-4">Step 2: Team Configuration</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm text-[#b0b8d4] mb-1">Men Slots per Team</label>
+                <label className="block text-sm text-[#b0b8d4] mb-1">Men Slots</label>
                 <input type="number" value={menSlots || ""} onChange={e => setMenSlots(parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-[#d4af37]/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]" />
               </div>
               <div>
-                <label className="block text-sm text-[#b0b8d4] mb-1">Women Slots per Team</label>
+                <label className="block text-sm text-[#b0b8d4] mb-1">Women Slots</label>
                 <input type="number" value={womenSlots || ""} onChange={e => setWomenSlots(parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-[#d4af37]/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]" />
               </div>
               <div>
                 <label className="block text-sm text-[#b0b8d4] mb-1">Total Teams</label>
                 <input type="number" value={teamCount || ""} onChange={e => setTeamCount(parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-[#d4af37]/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]" />
+              </div>
+              <div>
+                <label className="block text-sm text-[#b0b8d4] mb-1">Total Groups</label>
+                <input type="number" value={groupCount || ""} onChange={e => setGroupCount(parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-[#d4af37]/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]" title="1 for no groups, 2 for A/B, etc." />
               </div>
             </div>
             <div className="flex gap-4 mt-6">

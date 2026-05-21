@@ -255,7 +255,10 @@ function LiveAuctionContent() {
             {Object.values(teams).map(t => (
               <div key={t.id} className="bg-gradient-to-r from-black/60 to-transparent border-l-4 border-[#4a5568] p-4 flex justify-between items-center rounded-r-lg">
                 <div>
-                  <div className="font-bold text-lg">{t.name}</div>
+                  <div className="font-bold text-lg flex items-center gap-2">
+                    <span>{t.name}</span>
+                    {t.group && <span className="text-[10px] px-1.5 py-0.5 bg-white/10 rounded tracking-widest text-white/70">{t.group.replace("Group ", "")}</span>}
+                  </div>
                   <div className="text-[#d4af37] font-mono text-xl">₹{t.remainingBudget.toLocaleString()}</div>
                 </div>
                 <div className="text-right text-sm text-[#b0b8d4] font-mono bg-white/5 px-3 py-2 rounded">

@@ -62,10 +62,25 @@ function ColorAssignmentContent() {
   const finalizeAssignment = async () => {
     if (!tournamentId || !tournament || !tournament.colors) return;
     const shuffled = [...tournament.colors].sort(() => Math.random() - 0.5);
+    const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+    const groupNames = Array.from({ length: tournament.groupCount || 1 }, (_, i) => `Group ${String.fromCharCode(65 + i)}`);
+
     const updates: Record<string, unknown> = {};
     const final: Record<string, string> = {};
+    
+    // Determine groups based on shuffled teams if groupCount > 1
+    const groupAssignments: Record<string, string> = {};
+    if (tournament.groupCount && tournament.groupCount > 1) {
+      shuffledTeams.forEach((team, idx) => {
+        groupAssignments[team.id] = groupNames[idx % tournament.groupCount!];
+      });
+    }
+
     teams.forEach((team, idx) => {
       updates[`tournaments/${tournamentId}/teams/${team.id}/color`] = shuffled[idx];
+      if (groupAssignments[team.id]) {
+        updates[`tournaments/${tournamentId}/teams/${team.id}/group`] = groupAssignments[team.id];
+      }
       final[team.id] = shuffled[idx];
     });
     updates[`tournaments/${tournamentId}/colorAssignmentStatus`] = "assigned";
@@ -81,7 +96,24 @@ function ColorAssignmentContent() {
   const handleSaveManualColors = async () => {
     if (!tournamentId) return;
     const updates: Record<string, unknown> = {};
-    teams.forEach(t => { updates[`tournaments/${tournamentId}/teams/${t.id}/color`] = manualColors[t.id]; });
+    
+    const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+    const groupNames = Array.from({ length: tournament?.groupCount || 1 }, (_, i) => `Group ${String.fromCharCode(65 + i)}`);
+    const groupAssignments: Record<string, string> = {};
+    
+    if (tournament?.groupCount && tournament.groupCount > 1) {
+      shuffledTeams.forEach((team, idx) => {
+        // Only assign if they don't already have one to avoid reshuffling on every save
+        groupAssignments[team.id] = team.group || groupNames[idx % tournament.groupCount!];
+      });
+    }
+
+    teams.forEach(t => { 
+      updates[`tournaments/${tournamentId}/teams/${t.id}/color`] = manualColors[t.id]; 
+      if (groupAssignments[t.id]) {
+        updates[`tournaments/${tournamentId}/teams/${t.id}/group`] = groupAssignments[t.id];
+      }
+    });
     updates[`tournaments/${tournamentId}/colorAssignmentStatus`] = "assigned";
     try {
       await update(ref(db), updates);
@@ -96,14 +128,14 @@ function ColorAssignmentContent() {
     const rows: Record<string, string>[] = [];
     teams.forEach(team => {
       const teamPlayers = Object.values(players).filter(p => p.soldTo === team.id);
-      rows.push({ "Team": team.name, "Captain": team.captain, "Player Name": "", "Gender": "", "Price / Note": "" });
+      rows.push({ "Team": team.name, "Captain": team.captain, "Group": team.group || "-", "Player Name": "", "Gender": "", "Price / Note": "" });
       teamPlayers.forEach(p => {
-        rows.push({ "Team": "", "Captain": "", "Player Name": p.name, "Gender": p.gender, "Price / Note": p.soldPrice > 0 ? `₹${p.soldPrice.toLocaleString()}` : "Chit Round" });
+        rows.push({ "Team": "", "Captain": "", "Group": "", "Player Name": p.name, "Gender": p.gender, "Price / Note": p.soldPrice > 0 ? `₹${p.soldPrice.toLocaleString()}` : "Chit Round" });
       });
-      rows.push({ "Team": "", "Captain": "", "Player Name": "", "Gender": "", "Price / Note": "" });
+      rows.push({ "Team": "", "Captain": "", "Group": "", "Player Name": "", "Gender": "", "Price / Note": "" });
     });
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 20 }, { wch: 18 }, { wch: 22 }, { wch: 10 }, { wch: 16 }];
+    ws["!cols"] = [{ wch: 20 }, { wch: 18 }, { wch: 10 }, { wch: 22 }, { wch: 10 }, { wch: 16 }];
     XLSX.utils.book_append_sheet(wb, ws, "Teams & Players");
     XLSX.writeFile(wb, `${tournament.name}_${tournament.year}_teams.xlsx`);
     toast.success("Excel downloaded!");
@@ -135,7 +167,14 @@ function ColorAssignmentContent() {
                 style={{ backgroundColor: displayColors[team.id] || "#4a5568", boxShadow: `0 0 30px ${displayColors[team.id] || "#4a5568"}80` }}
               />
               <h3 className="font-bold text-base">{team.name}</h3>
-              <div className="text-xs text-[#b0b8d4]">{team.captain}</div>
+              <div className="text-xs text-[#b0b8d4] flex flex-col items-center gap-1">
+                <span>{team.captain}</span>
+                {team.group && (
+                  <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold text-white tracking-widest uppercase mt-1">
+                    {team.group}
+                  </span>
+                )}
+              </div>
               {/* Manual color wheel */}
               <div className="flex items-center gap-2 mt-1">
                 <label className="text-[10px] text-[#b0b8d4] uppercase tracking-wider">Pick</label>
