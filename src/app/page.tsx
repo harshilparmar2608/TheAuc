@@ -9,6 +9,7 @@ import { ref, onValue, get, update } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { Tournament, AdminUser } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
+import toast from "react-hot-toast";
 
 /* ─── tiny hook: is element in viewport? ─── */
 function useInView(threshold = 0.15) {
