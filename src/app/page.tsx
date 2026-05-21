@@ -75,7 +75,7 @@ export default function Home() {
   const { role, username, login, logout, loading: authLoading } = useAuth();
   
   /* modal state */
-  const [modal, setModal] = useState<null | { action: "host" | "live"; tournament: Tournament } | "gatekeeper-login">(null);
+  const [modal, setModal] = useState<null | { action: "host" | "live"; tournament: Tournament } | "gatekeeper-login" | "change-password">(null);
   const [loginUser, setLoginUser] = useState("");
   const [password, setPassword] = useState("");
   const [pwError, setPwError] = useState(false);
