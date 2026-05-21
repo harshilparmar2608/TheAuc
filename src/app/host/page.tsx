@@ -108,10 +108,11 @@ function HostPanelContent() {
     await update(ref(db), shuffleUpdates);
 
     await update(ref(db, `tournaments/${tournamentId}`), { status: "running" });
+    const startingBid = shuffled[0]?.basePrice || tournament.basePrice || 0;
     await update(ref(db, `tournaments/${tournamentId}/auction`), {
       status: "paused",
       currentPlayerIndex: 0,
-      currentBid: tournament.basePrice || 0,
+      currentBid: startingBid,
       currentBiddingTeam: null,
       timerSeconds: 30,
       timerRunning: false,
@@ -344,8 +345,11 @@ function HostPanelContent() {
     updates[`tournaments/${tournamentId}/teams/${soldTeamId}/remainingBudget`] = team.remainingBudget - soldPrice;
     updates[`tournaments/${tournamentId}/teams/${soldTeamId}/${isMen ? "menCount" : "womenCount"}`] = isMen ? newMenCount : newWomenCount;
     const newSold = [...(auction.soldPlayers || []), currentPlayerId];
+    const nextPlayer = allPlayersSorted[auction.currentPlayerIndex + 1];
+    const nextBid = nextPlayer?.basePrice || tournament.basePrice || 0;
+
     updates[`tournaments/${tournamentId}/auction/soldPlayers`] = newSold;
-    updates[`tournaments/${tournamentId}/auction/currentBid`] = tournament.basePrice || 0;
+    updates[`tournaments/${tournamentId}/auction/currentBid`] = nextBid;
     updates[`tournaments/${tournamentId}/auction/currentBiddingTeam`] = null;
     updates[`tournaments/${tournamentId}/auction/status`] = "paused";
     updates[`tournaments/${tournamentId}/auction/timerSeconds`] = 30;
@@ -396,9 +400,12 @@ function HostPanelContent() {
     if (!auction || !currentPlayer || !currentPlayerId || !tournamentId) return;
     const updates: Record<string, unknown> = {};
     updates[`tournaments/${tournamentId}/players/${currentPlayerId}/status`] = "unsold";
+    const nextPlayer = allPlayersSorted[auction.currentPlayerIndex + 1];
+    const nextBid = nextPlayer?.basePrice || tournament.basePrice || 0;
+
     const newUnsold = [...(auction.unsoldPlayers || []), currentPlayerId];
     updates[`tournaments/${tournamentId}/auction/unsoldPlayers`] = newUnsold;
-    updates[`tournaments/${tournamentId}/auction/currentBid`] = tournament.basePrice || 0;
+    updates[`tournaments/${tournamentId}/auction/currentBid`] = nextBid;
     updates[`tournaments/${tournamentId}/auction/currentBiddingTeam`] = null;
     updates[`tournaments/${tournamentId}/auction/status`] = "paused";
     updates[`tournaments/${tournamentId}/auction/timerSeconds`] = 30;
@@ -796,7 +803,7 @@ function HostPanelContent() {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-white/10 bg-black/20 px-6">
+            <div className="flex border-b border-white/10 bg-black/20 px-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
               <button onClick={() => setEditTab("settings")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "settings" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Tournament Settings</button>
               <button onClick={() => setEditTab("teams")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "teams" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Teams</button>
               <button onClick={() => setEditTab("players")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "players" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Players</button>
