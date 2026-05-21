@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { Season } from "@/types";
 import Link from "next/link";
 import { Trophy, ArrowLeft, Award, Medal, Crown, Star } from "lucide-react";
+import SponsorsGallery from "@/components/SponsorsGallery";
 
 export default function HallOfFamePage() {
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -57,6 +58,10 @@ export default function HallOfFamePage() {
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-6">
+        
+        {/* Global Sponsors Section */}
+        <SponsorsGallery />
+
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="w-12 h-12 rounded-full border-4 border-[#d4af37]/20 border-t-[#d4af37] animate-spin" />
@@ -194,16 +199,18 @@ export default function HallOfFamePage() {
                     {/* Sponsors Accordion */}
                     {(season as any).sponsors && (
                       <div className="mt-8 pt-6 border-t border-white/5">
-                        <div className="flex items-center gap-2 text-sm font-bold text-[#d4af37] tracking-wider uppercase mb-4">
-                          Official Sponsors
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          {(season as any).sponsors.split(',').map((sponsor: string, i: number) => (
-                            <span key={i} className="px-4 py-1.5 bg-gradient-to-br from-white/10 to-transparent border border-white/10 rounded-full text-xs text-white tracking-wide shadow-lg">
-                              {sponsor.trim()}
-                            </span>
-                          ))}
-                        </div>
+                        <details className="group">
+                          <summary className="flex items-center gap-2 cursor-pointer list-none text-sm font-bold text-[#b0b8d4] hover:text-white transition-colors">
+                            <span className="text-[#d4af37]">▶</span> Official Sponsors
+                          </summary>
+                          <div className="mt-4 flex flex-wrap gap-2 pl-4">
+                            {(season as any).sponsors.split(',').map((sponsor: string, i: number) => (
+                              <span key={i} className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white tracking-wide">
+                                {sponsor.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </details>
                       </div>
                     )}
 
