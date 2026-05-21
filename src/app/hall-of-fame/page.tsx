@@ -210,7 +210,6 @@ export default function HallOfFamePage() {
                     )}
 
                   </div>
-                  </div>
                 </div>
               </div>
             ))}
