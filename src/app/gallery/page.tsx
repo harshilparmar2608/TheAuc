@@ -8,8 +8,6 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Trash2, Plus, ImageIcon, UploadCloud } from "lucide-react";
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
 
 type GalleryImage = {
   id: string;
@@ -57,10 +55,28 @@ export default function GalleryPage() {
 
     setUploading(true);
     try {
-      // 1. Upload to Storage
-      const fileRef = storageRef(storage, `gallery/${Date.now()}_${file.name}`);
-      await uploadBytes(fileRef, file);
-      const downloadUrl = await getDownloadURL(fileRef);
+      // 1. Upload to ImgBB
+      const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+      if (!apiKey) {
+        toast.error("ImgBB API key is missing from environment variables.");
+        setUploading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error?.message || "ImgBB upload failed");
+      }
+
+      const downloadUrl = data.data.url;
 
       // 2. Save metadata to RTDB
       const newRef = push(ref(db, "gallery"));
