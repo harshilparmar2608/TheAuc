@@ -454,15 +454,15 @@ function HostPanelContent() {
       <div className="w-full lg:w-[58%] flex flex-col gap-4">
 
         {/* Header */}
-        <div className="glass rounded-xl px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10"><Image src="/logo.png" alt="GJPL" fill sizes="40px" className="object-contain" /></div>
-            <div>
-              <div className="font-bold text-[#d4af37]">{tournament.name}</div>
-              <div className="text-xs text-[#b0b8d4]">Sold: {soldCount} · Unsold: {unsoldCount} · Remaining: {allPlayersSorted.length - auction.currentPlayerIndex}</div>
+        <div className="glass rounded-xl px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-10 h-10 shrink-0"><Image src="/logo.png" alt="GJPL" fill sizes="40px" className="object-contain" /></div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-[#d4af37] truncate">{tournament.name}</div>
+              <div className="text-xs text-[#b0b8d4] truncate">Sold: {soldCount} · Unsold: {unsoldCount} · Left: {allPlayersSorted.length - auction.currentPlayerIndex}</div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
             <button 
               onClick={() => setShowEditPasswordModal(true)} 
               className="text-xs border border-blue-500/50 text-blue-400 px-3 py-1 rounded hover:bg-blue-500/10"
@@ -806,11 +806,11 @@ function HostPanelContent() {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-white/10 bg-black/20 px-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
-              <button onClick={() => setEditTab("settings")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "settings" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Tournament Settings</button>
-              <button onClick={() => setEditTab("teams")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "teams" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Teams</button>
-              <button onClick={() => setEditTab("players")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "players" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Players</button>
-              <button onClick={() => setEditTab("rules")} className={`px-6 py-4 font-bold border-b-2 transition ${editTab === "rules" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Bid Rules</button>
+            <div className="flex flex-wrap border-b border-white/10 bg-black/20 px-2 sm:px-6">
+              <button onClick={() => setEditTab("settings")} className={`flex-1 whitespace-nowrap px-2 sm:px-6 py-3 font-bold border-b-2 transition text-xs sm:text-base ${editTab === "settings" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Settings</button>
+              <button onClick={() => setEditTab("teams")} className={`flex-1 whitespace-nowrap px-2 sm:px-6 py-3 font-bold border-b-2 transition text-xs sm:text-base ${editTab === "teams" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Teams</button>
+              <button onClick={() => setEditTab("players")} className={`flex-1 whitespace-nowrap px-2 sm:px-6 py-3 font-bold border-b-2 transition text-xs sm:text-base ${editTab === "players" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Players</button>
+              <button onClick={() => setEditTab("rules")} className={`flex-1 whitespace-nowrap px-2 sm:px-6 py-3 font-bold border-b-2 transition text-xs sm:text-base ${editTab === "rules" ? "border-[#d4af37] text-[#d4af37]" : "border-transparent text-[#b0b8d4] hover:text-white"}`}>Bid Rules</button>
             </div>
 
             {/* Content Area */}
