@@ -18,6 +18,8 @@ function UnsoldChitContent() {
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  // genderOverride: set of playerIds where host manually overrode gender check
+  const [genderOverride, setGenderOverride] = useState<Record<string, boolean>>({});
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -47,29 +49,66 @@ function UnsoldChitContent() {
 
   const teamList = Object.values(teams);
 
-  const handlePickChit = async (player: Player) => {
+  // Check if ALL remaining unassigned players of a gender are less than what's needed
+  const getGenderStats = () => {
+    const unassignedPlayers = chitList.filter(p => !revealed[p.playerId]);
+    const remainingMen = unassignedPlayers.filter(p => p.gender === "Men").length;
+    const remainingWomen = unassignedPlayers.filter(p => p.gender === "Women").length;
+
+    // Pending slots across all teams
+    let pendingMenSlots = 0;
+    let pendingWomenSlots = 0;
+    if (tournament) {
+      teamList.forEach(team => {
+        pendingMenSlots += Math.max(0, tournament.menSlots - team.menCount);
+        pendingWomenSlots += Math.max(0, tournament.womenSlots - team.womenCount);
+      });
+    }
+
+    return { remainingMen, remainingWomen, pendingMenSlots, pendingWomenSlots };
+  };
+
+  const handlePickChit = async (player: Player, forceOverride = false) => {
     if (!selectedTeamId) { toast.error("Select a team first!"); return; }
     if (revealed[player.playerId]) return;
     if (!tournament || !tournamentId) return;
     const team = teams[selectedTeamId];
     if (!team) return;
+
     const isMen = player.gender === "Men";
-    if (isMen && team.menCount >= tournament.menSlots) {
-      toast.error(`${team.name} has no Men slots left!`); return;
+    const slotFull = isMen
+      ? team.menCount >= tournament.menSlots
+      : team.womenCount >= tournament.womenSlots;
+
+    if (slotFull && !forceOverride && !genderOverride[player.playerId]) {
+      toast.error(`${team.name} has no ${player.gender} slots left! Use the Override button below to allow this pick.`);
+      return;
     }
-    if (!isMen && team.womenCount >= tournament.womenSlots) {
-      toast.error(`${team.name} has no Women slots left!`); return;
-    }
+
+    // If override: put player in the opposite slot count
+    const countKey = slotFull && forceOverride
+      ? (isMen ? "womenCount" : "menCount")   // put them in the other gender's count
+      : (isMen ? "menCount" : "womenCount");
+
+    const currentCount = slotFull && forceOverride
+      ? (isMen ? team.womenCount : team.menCount)
+      : (isMen ? team.menCount : team.womenCount);
+
     setRevealed(r => ({ ...r, [player.playerId]: true }));
     const updates: Record<string, unknown> = {};
     updates[`tournaments/${tournamentId}/players/${player.playerId}/status`] = "sold";
     updates[`tournaments/${tournamentId}/players/${player.playerId}/soldTo`] = selectedTeamId;
     updates[`tournaments/${tournamentId}/players/${player.playerId}/soldPrice`] = 0;
-    const countKey = isMen ? "menCount" : "womenCount";
-    updates[`tournaments/${tournamentId}/teams/${selectedTeamId}/${countKey}`] = (isMen ? team.menCount : team.womenCount) + 1;
+    updates[`tournaments/${tournamentId}/teams/${selectedTeamId}/${countKey}`] = currentCount + 1;
     await update(ref(db), updates);
     setAssignments(a => ({ ...a, [player.playerId]: selectedTeamId }));
-    toast.success(`${player.name} → ${team.name}!`);
+
+    const note = slotFull && forceOverride ? " (gender override)" : "";
+    toast.success(`${player.name} → ${team.name}!${note}`);
+  };
+
+  const toggleOverride = (playerId: string) => {
+    setGenderOverride(g => ({ ...g, [playerId]: !g[playerId] }));
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37]" /></div>;
@@ -78,6 +117,10 @@ function UnsoldChitContent() {
 
   const assignedCount = Object.keys(assignments).length;
   const allAssigned = assignedCount === chitList.length;
+  const { remainingMen, remainingWomen, pendingMenSlots, pendingWomenSlots } = getGenderStats();
+  const menShortfall = remainingMen < pendingMenSlots;
+  const womenShortfall = remainingWomen < pendingWomenSlots;
+  const showOverrideHint = menShortfall || womenShortfall;
 
   return (
     <main className="min-h-screen p-6 flex flex-col items-center">
@@ -94,6 +137,16 @@ function UnsoldChitContent() {
             <div className="h-full bg-gradient-to-r from-[#d4af37] to-yellow-300 rounded-full transition-all duration-500"
               style={{ width: `${(assignedCount / chitList.length) * 100}%` }} />
           </div>
+
+          {/* Gender imbalance warning */}
+          {showOverrideHint && (
+            <div className="mt-4 mx-auto max-w-lg bg-orange-500/10 border border-orange-500/40 rounded-xl px-4 py-3 text-sm text-orange-300">
+              <span className="font-bold">⚠ Gender imbalance detected!</span>
+              {menShortfall && <span className="block text-xs mt-0.5">Only {remainingMen} male player{remainingMen !== 1 ? "s" : ""} left for {pendingMenSlots} pending Men slots.</span>}
+              {womenShortfall && <span className="block text-xs mt-0.5">Only {remainingWomen} female player{remainingWomen !== 1 ? "s" : ""} left for {pendingWomenSlots} pending Women slots.</span>}
+              <span className="block text-xs mt-1 text-orange-200/70">Use the <strong>Override</strong> button on a chit card to allow picking opposite gender.</span>
+            </div>
+          )}
         </div>
 
         {/* Team selector */}
@@ -119,34 +172,64 @@ function UnsoldChitContent() {
           {chitList.map((player, idx) => {
             const isRevealed = revealed[player.playerId];
             const assignedTeam = assignments[player.playerId] ? teams[assignments[player.playerId]] : null;
+            const team = teams[selectedTeamId];
+            const isMen = player.gender === "Men";
+            const slotFull = team
+              ? (isMen ? team.menCount >= tournament.menSlots : team.womenCount >= tournament.womenSlots)
+              : false;
+            const isOverridden = genderOverride[player.playerId];
+
             return (
-              <div key={player.playerId}
-                onClick={() => !isRevealed && handlePickChit(player)}
-                className={`aspect-[3/4] rounded-2xl border-2 flex flex-col items-center justify-center p-3 select-none transition-all duration-500 ${isRevealed
-                  ? "border-[#d4af37]/60 bg-gradient-to-b from-[#d4af37]/10 to-transparent cursor-default"
-                  : selectedTeamId
-                    ? "border-white/30 bg-black/40 hover:border-[#d4af37] hover:scale-105 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] cursor-pointer"
-                    : "border-white/10 bg-black/30 cursor-not-allowed opacity-60"
-                  }`}>
-                {!isRevealed ? (
-                  <>
-                    
-                    <div className="text-[#b0b8d4] text-xs font-bold">Chit #{idx + 1}</div>
-                    {selectedTeamId && <div className="text-[#4a5568] text-[10px] mt-1">click to open</div>}
-                  </>
-                ) : (
-                  <>
-                    <div className={`text-3xl mb-2 ${player.gender === "Men" ? "text-blue-400" : "text-pink-400"}`}>
-                      {player.gender === "Men" ? "Men " : "Women "}
-                    </div>
-                    <div className="font-black text-white text-center text-xs leading-tight">{player.name}</div>
-                    <div className={`text-[9px] mt-1 px-2 py-0.5 rounded font-bold ${player.gender === "Men" ? "bg-blue-500/20 text-blue-300" : "bg-pink-500/20 text-pink-300"}`}>
-                      {player.gender}
-                    </div>
-                    {assignedTeam && (
-                      <div className="text-[#d4af37] text-[9px] font-bold mt-1.5 text-center">→ {assignedTeam.name}</div>
-                    )}
-                  </>
+              <div key={player.playerId} className="flex flex-col gap-1.5">
+                <div
+                  onClick={() => !isRevealed && handlePickChit(player, isOverridden)}
+                  className={`aspect-[3/4] rounded-2xl border-2 flex flex-col items-center justify-center p-3 select-none transition-all duration-500 ${isRevealed
+                    ? "border-[#d4af37]/60 bg-gradient-to-b from-[#d4af37]/10 to-transparent cursor-default"
+                    : selectedTeamId
+                      ? slotFull && !isOverridden
+                        ? "border-red-500/40 bg-red-500/5 hover:border-red-400 cursor-pointer opacity-70"
+                        : "border-white/30 bg-black/40 hover:border-[#d4af37] hover:scale-105 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] cursor-pointer"
+                      : "border-white/10 bg-black/30 cursor-not-allowed opacity-60"
+                    }`}>
+                  {!isRevealed ? (
+                    <>
+                      <div className="text-[#b0b8d4] text-xs font-bold">Chit #{idx + 1}</div>
+                      {selectedTeamId && <div className="text-[#4a5568] text-[10px] mt-1">click to open</div>}
+                      {slotFull && !isOverridden && selectedTeamId && (
+                        <div className="text-red-400 text-[9px] mt-1 font-bold text-center">SLOT FULL</div>
+                      )}
+                      {isOverridden && (
+                        <div className="text-orange-400 text-[9px] mt-1 font-bold text-center">⚡ OVERRIDE ON</div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className={`text-3xl mb-2 ${player.gender === "Men" ? "text-blue-400" : "text-pink-400"}`}>
+                        {player.gender === "Men" ? "♂" : "♀"}
+                      </div>
+                      <div className="font-black text-white text-center text-xs leading-tight">{player.name}</div>
+                      <div className={`text-[9px] mt-1 px-2 py-0.5 rounded font-bold ${player.gender === "Men" ? "bg-blue-500/20 text-blue-300" : "bg-pink-500/20 text-pink-300"}`}>
+                        {player.gender}
+                      </div>
+                      {assignedTeam && (
+                        <div className="text-[#d4af37] text-[9px] font-bold mt-1.5 text-center">→ {assignedTeam.name}</div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Override toggle button — only show when not revealed, a team is selected, and slot is full */}
+                {!isRevealed && selectedTeamId && slotFull && (
+                  <button
+                    onClick={() => toggleOverride(player.playerId)}
+                    className={`w-full text-[10px] font-bold py-1 rounded-lg border transition-all ${
+                      isOverridden
+                        ? "bg-orange-500/20 border-orange-500/60 text-orange-300 hover:bg-orange-500/30"
+                        : "bg-white/5 border-white/20 text-[#b0b8d4] hover:border-orange-400/50 hover:text-orange-400"
+                    }`}
+                  >
+                    {isOverridden ? "⚡ Override ON" : "Override"}
+                  </button>
                 )}
               </div>
             );

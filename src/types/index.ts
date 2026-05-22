@@ -24,9 +24,14 @@ export interface Tournament {
   logo: string;
   colors?: string[];
   colorAssignmentStatus: "pending" | "assigned";
+  colorReveal?: {
+    phase: "idle" | "running" | "done";
+    states: Record<string, "hidden" | "spinning" | "revealed">;
+  };
   groupCount?: number;
   basePrice: number;
   incrementRules?: IncrementRule[];   // tiered bid increment config
+  rules?: string[];                   // auction rules shown before start
   createdAt: number;
   updatedAt: number;
 }

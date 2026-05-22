@@ -30,6 +30,7 @@ function HostPanelContent() {
   const [editTeams, setEditTeams] = useState<Record<string, any>>({});
   const [editPlayers, setEditPlayers] = useState<Record<string, any>>({});
   const [editRules, setEditRules] = useState<IncrementRule[]>([]);
+  const [hostCountdown, setHostCountdown] = useState<number | null>(null);
 
   // ── Helper: resolve which increment applies to the current bid ──
   const getIncrement = (bid: number, rules?: IncrementRule[]): number => {
@@ -87,7 +88,12 @@ function HostPanelContent() {
   // Filtering caused the list to shrink as players were sold, making
   // currentPlayerIndex run past the end far too early.
   const allPlayersSorted = playerList
-    .sort((a, b) => (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999));
+    .sort((a, b) => {
+      if ((a.sortOrder ?? 9999) !== (b.sortOrder ?? 9999)) {
+        return (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999);
+      }
+      return a.playerId.localeCompare(b.playerId);
+    });
   const currentPlayer = auction && auction.currentPlayerIndex < allPlayersSorted.length
     ? allPlayersSorted[auction.currentPlayerIndex]
     : null;
@@ -106,8 +112,18 @@ function HostPanelContent() {
       shuffleUpdates[`tournaments/${tournamentId}/players/${p.playerId}/sortOrder`] = idx;
     });
     await update(ref(db), shuffleUpdates);
-
     await update(ref(db, `tournaments/${tournamentId}`), { status: "running" });
+
+    // ── 3-second countdown synced via Firebase ──
+    for (let c = 3; c >= 1; c--) {
+      await update(ref(db, `tournaments/${tournamentId}`), { countdown: c });
+      setHostCountdown(c);
+      await new Promise(res => setTimeout(res, 1000));
+    }
+    // Clear countdown
+    await update(ref(db, `tournaments/${tournamentId}`), { countdown: 0 });
+    setHostCountdown(null);
+
     const startingBid = shuffled[0]?.basePrice || tournament.basePrice || 0;
     await update(ref(db, `tournaments/${tournamentId}/auction`), {
       status: "paused",
@@ -430,12 +446,52 @@ function HostPanelContent() {
   if (!auction || tournament.status === "setup") {
     return (
       <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="glass rounded-2xl p-12 text-center max-w-lg w-full">
+        {/* Host-side countdown overlay */}
+        {hostCountdown !== null && hostCountdown > 0 && (
+          <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+            <div className="text-[#b0b8d4] text-lg uppercase tracking-[0.4em] font-bold mb-6 animate-pulse">Auction Starting In</div>
+            <div
+              key={hostCountdown}
+              className="text-[180px] leading-none font-black text-transparent bg-clip-text"
+              style={{
+                backgroundImage: "linear-gradient(135deg, #d4af37 0%, #fff8dc 50%, #c9992a 100%)",
+                filter: "drop-shadow(0 0 60px rgba(212,175,55,0.8))",
+                animation: "countdownPop 1s cubic-bezier(0.34,1.56,0.64,1) both",
+              }}
+            >
+              {hostCountdown}
+            </div>
+            <style>{`
+              @keyframes countdownPop {
+                0%   { transform: scale(2.5); opacity: 0; }
+                40%  { transform: scale(0.85); opacity: 1; }
+                70%  { transform: scale(1.08); opacity: 1; }
+                100% { transform: scale(1); opacity: 1; }
+              }
+            `}</style>
+          </div>
+        )}
+        <div className="glass rounded-2xl p-12 text-center max-w-lg w-full max-h-screen overflow-y-auto">
           <div className="relative w-24 h-24 mx-auto mb-6">
             <Image src="/logo.png" alt="GJPL" fill sizes="96px" className="object-contain" />
           </div>
           <h1 className="text-3xl font-black text-[#d4af37] mb-2">{tournament.name}</h1>
           <p className="text-[#b0b8d4] mb-8">{teamList.length} teams · {playerList.length} players</p>
+
+          {tournament.rules && tournament.rules.length > 0 && (
+            <div className="text-left bg-black/40 border border-[#d4af37]/30 rounded-xl p-6 mb-8 text-sm">
+              <h3 className="text-[#d4af37] font-bold uppercase tracking-widest mb-4">Tournament Rules</h3>
+              <ul className="space-y-3">
+                {tournament.rules.map((rule, idx) => (
+                  <li key={idx} className="flex gap-3 text-[#b0b8d4]">
+                    <span className="text-[#d4af37] font-black shrink-0">{idx + 1}.</span>
+                    <span>{rule}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <button
             onClick={handleStartAuction}
             className="w-full bg-gradient-to-r from-[#d4af37] to-yellow-500 text-[#0a0e27] py-4 rounded-xl font-black text-xl shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:shadow-[0_0_50px_rgba(212,175,55,0.8)] transition-all"

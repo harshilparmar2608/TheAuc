@@ -29,6 +29,11 @@ export default function SetupPage() {
   const [playerBasePrice, setPlayerBasePrice] = useState(500);
   const [logo, setLogo] = useState("/logo.png");
 
+  // Tournament rules (each line = one rule)
+  const [rulesText, setRulesText] = useState(
+    "Each team gets equal budget to bid for players.\nMen and Women slots must be filled separately.\nBase price is the minimum bid for each player.\nBidding increments in tiers — higher bid = larger step.\nUnsold players go to the Chit Round for random assignment."
+  );
+
   // Increment rules — default: ₹2k below 20k, ₹3k above
   const [incrementRules, setIncrementRules] = useState<IncrementRule[]>([
     { upTo: 20000, increment: 2000 },
@@ -155,6 +160,7 @@ export default function SetupPage() {
         colors,
         colorAssignmentStatus: "pending",
         groupCount,
+        rules: rulesText.split("\n").map(r => r.trim()).filter(Boolean),
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -325,6 +331,35 @@ export default function SetupPage() {
                   }).join("  |  ")}
                 </p>
               </div>
+            </div>
+
+            {/* ── Tournament Rules ── */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-bold text-white">Tournament Rules</h3>
+                  <p className="text-xs text-[#b0b8d4] mt-0.5">One rule per line. Displayed to all viewers before the auction starts.</p>
+                </div>
+              </div>
+              <textarea
+                value={rulesText}
+                onChange={e => setRulesText(e.target.value)}
+                rows={6}
+                placeholder="Enter each rule on a new line..."
+                className="w-full bg-black/50 border border-[#d4af37]/40 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#d4af37] resize-y font-sans leading-relaxed"
+              />
+              {/* Live preview */}
+              {rulesText.trim() && (
+                <div className="mt-3 p-4 bg-[#d4af37]/5 border border-[#d4af37]/20 rounded-xl space-y-2">
+                  <p className="text-xs text-[#d4af37] font-semibold mb-2 uppercase tracking-wider">Preview</p>
+                  {rulesText.split("\n").filter(r => r.trim()).map((rule, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="w-5 h-5 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 flex items-center justify-center text-[10px] font-bold text-[#d4af37] shrink-0 mt-0.5">{i + 1}</span>
+                      <span className="text-sm text-[#b0b8d4]">{rule.trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button onClick={() => setStep(2)} className="mt-6 bg-[#d4af37] text-[#0a0e27] px-6 py-2 rounded font-bold hover:bg-yellow-400">Next</button>

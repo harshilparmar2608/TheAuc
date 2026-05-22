@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Trophy, Target, Image as ImageIcon, LogOut, ShieldAlert, User, Key, Swords, Sparkles, Zap } from "lucide-react";
-import { ref, onValue, get, update } from "firebase/database";
+import { ref, onValue, get, update, remove } from "firebase/database";
 import { db } from "@/lib/firebase";
 import { Tournament, AdminUser } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,7 +75,9 @@ export default function Home() {
   const { role, username, login, logout, loading: authLoading } = useAuth();
   
   /* modal state */
-  const [modal, setModal] = useState<null | { action: "host" | "live"; tournament: Tournament } | "gatekeeper-login" | "change-password">(null);
+  const [modal, setModal] = useState<null | { action: "host" | "live"; tournament: Tournament } | "gatekeeper-login" | "change-password" | { action: "delete"; tournament: Tournament }>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [loginUser, setLoginUser] = useState("");
   const [password, setPassword] = useState("");
   const [pwError, setPwError] = useState(false);
@@ -121,6 +123,19 @@ export default function Home() {
     } else if (action === "host") {
       router.push(`/host?tournament=${t.id}`);
     }
+  };
+
+  const handleDeleteTournament = async (t: Tournament) => {
+    setIsDeleting(true);
+    try {
+      await remove(ref(db, `tournaments/${t.id}`));
+      toast.success(`"${t.name}" deleted successfully.`);
+      setModal(null);
+      setDeleteConfirmName("");
+    } catch {
+      toast.error("Failed to delete tournament.");
+    }
+    setIsDeleting(false);
   };
 
   const handlePasswordSubmit = async () => {
@@ -570,7 +585,12 @@ export default function Home() {
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {tournaments.map((t, idx) => (
                 <RevealSection key={t.id} delay={idx * 80}>
-                  <TournamentCard tournament={t} onAction={handleAction} role={role} />
+                  <TournamentCard
+                    tournament={t}
+                    onAction={handleAction}
+                    role={role}
+                    onDelete={(t) => { setDeleteConfirmName(""); setModal({ action: "delete", tournament: t }); }}
+                  />
                 </RevealSection>
               ))}
             </div>
@@ -760,6 +780,60 @@ export default function Home() {
         </div>
       )}
 
+      {/* ══════════════ DELETE TOURNAMENT MODAL ══════════════ */}
+      {modal !== null && typeof modal === "object" && "action" in modal && modal.action === "delete" && (
+        <div
+          id="delete-modal-overlay"
+          onClick={(e) => { if ((e.target as HTMLElement).id === "delete-modal-overlay") { setModal(null); setDeleteConfirmName(""); } }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(0,0,0,0.88)", backdropFilter: "blur(8px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+            animation: "fadeIn 0.3s ease",
+          }}
+        >
+          <div className="glass p-8 rounded-2xl w-full max-w-md border border-red-500/40 shadow-[0_0_40px_rgba(239,68,68,0.2)]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-500/15 border border-red-500/40 flex items-center justify-center text-red-400 text-xl font-black shrink-0">✕</div>
+              <div>
+                <h2 className="text-xl font-black text-red-400 leading-tight">Delete Tournament</h2>
+                <p className="text-[#b0b8d4] text-xs mt-0.5">This action is permanent and cannot be undone.</p>
+              </div>
+            </div>
+
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-5">
+              <p className="text-red-300 text-sm font-semibold">{(modal as any).tournament.name}</p>
+              <p className="text-[#b0b8d4] text-xs mt-1">All teams, players, bids, and auction data will be permanently erased.</p>
+            </div>
+
+            <p className="text-xs text-[#b0b8d4] mb-2">Type the tournament name to confirm:</p>
+            <input
+              type="text"
+              placeholder={(modal as any).tournament.name}
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              className="w-full bg-black/50 border border-red-500/30 rounded-lg px-4 py-3 text-white mb-5 focus:outline-none focus:border-red-400 text-sm"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setModal(null); setDeleteConfirmName(""); }}
+                className="flex-1 py-3 border border-white/10 text-white rounded-lg hover:bg-white/5 transition font-bold text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteTournament((modal as any).tournament)}
+                disabled={deleteConfirmName !== (modal as any).tournament.name || isDeleting}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-black text-sm shadow-[0_0_15px_rgba(239,68,68,0.3)] transition"
+              >
+                {isDeleting ? "Deleting..." : "Delete Forever"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══════════════ KEYFRAMES ══════════════ */}
       <style>{`
         @keyframes float {
@@ -799,10 +873,12 @@ export default function Home() {
 function TournamentCard({
   tournament: t,
   onAction,
+  onDelete,
   role,
 }: {
   tournament: Tournament;
   onAction: (action: "host" | "live", t: Tournament) => void;
+  onDelete: (t: Tournament) => void;
   role: string;
 }) {
   const isLive = t.status === "running";
@@ -901,32 +977,61 @@ function TournamentCard({
             Watch Live
           </button>
 
-          {/* Only show Host button to admins */}
+          {/* Only show Host + Delete buttons to admins */}
           {role !== "guest" && (
-            <button
-              id={`host-btn-${t.id}`}
-              onClick={() => onAction("host", t)}
-              style={{
-                padding: "12px 22px",
-                background: "linear-gradient(135deg, #d4af37 0%, #c9992a 100%)",
-                border: "none",
-                borderRadius: 10, color: "#0a0e27", fontWeight: 900,
-                fontSize: "0.9rem", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 8,
-                boxShadow: "0 0 15px rgba(212,175,55,0.3)",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.boxShadow = "0 0 30px rgba(212,175,55,0.6)";
-                (e.currentTarget as HTMLElement).style.transform = "scale(1.03)";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.boxShadow = "0 0 15px rgba(212,175,55,0.3)";
-                (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-              }}
-            >
-              Host Auction
-            </button>
+            <>
+              <button
+                id={`host-btn-${t.id}`}
+                onClick={() => onAction("host", t)}
+                style={{
+                  padding: "12px 22px",
+                  background: "linear-gradient(135deg, #d4af37 0%, #c9992a 100%)",
+                  border: "none",
+                  borderRadius: 10, color: "#0a0e27", fontWeight: 900,
+                  fontSize: "0.9rem", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 8,
+                  boxShadow: "0 0 15px rgba(212,175,55,0.3)",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 30px rgba(212,175,55,0.6)";
+                  (e.currentTarget as HTMLElement).style.transform = "scale(1.03)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 0 15px rgba(212,175,55,0.3)";
+                  (e.currentTarget as HTMLElement).style.transform = "scale(1)";
+                }}
+              >
+                Host Auction
+              </button>
+
+              {/* Delete button — only super-admin or admin */}
+              <button
+                id={`delete-btn-${t.id}`}
+                onClick={() => onDelete(t)}
+                title="Delete tournament"
+                style={{
+                  padding: "12px 14px",
+                  background: "rgba(239,68,68,0.08)",
+                  border: "1px solid rgba(239,68,68,0.35)",
+                  borderRadius: 10, color: "#f87171", fontWeight: 700,
+                  fontSize: "1rem", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "all 0.2s ease",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.2)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(239,68,68,0.7)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.08)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(239,68,68,0.35)";
+                }}
+              >
+                🗑
+              </button>
+            </>
           )}
         </div>
       </div>
