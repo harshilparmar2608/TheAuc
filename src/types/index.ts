@@ -28,6 +28,10 @@ export interface Tournament {
     phase: "idle" | "running" | "done";
     states: Record<string, "hidden" | "spinning" | "revealed">;
   };
+  chitQueue?: {
+    order: string[];
+    currentIndex: number;
+  };
   groupCount?: number;
   basePrice: number;
   incrementRules?: IncrementRule[];   // tiered bid increment config

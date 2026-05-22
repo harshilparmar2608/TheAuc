@@ -15,11 +15,8 @@ function UnsoldChitContent() {
   const [teams, setTeams] = useState<Record<string, Team>>({});
   const [loading, setLoading] = useState(true);
   const [chitList, setChitList] = useState<Player[]>([]);
-  const [selectedTeamId, setSelectedTeamId] = useState("");
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [assignments, setAssignments] = useState<Record<string, string>>({});
-  // genderOverride: set of playerIds where host manually overrode gender check
-  const [genderOverride, setGenderOverride] = useState<Record<string, boolean>>({});
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -47,32 +44,30 @@ function UnsoldChitContent() {
     }
   }, [loading, chitList.length, tournamentId, router]);
 
-  const teamList = Object.values(teams);
-
-  // Check if ALL remaining unassigned players of a gender are less than what's needed
-  const getGenderStats = () => {
-    const unassignedPlayers = chitList.filter(p => !revealed[p.playerId]);
-    const remainingMen = unassignedPlayers.filter(p => p.gender === "Men").length;
-    const remainingWomen = unassignedPlayers.filter(p => p.gender === "Women").length;
-
-    // Pending slots across all teams
-    let pendingMenSlots = 0;
-    let pendingWomenSlots = 0;
-    if (tournament) {
-      teamList.forEach(team => {
-        pendingMenSlots += Math.max(0, tournament.menSlots - team.menCount);
-        pendingWomenSlots += Math.max(0, tournament.womenSlots - team.womenCount);
-      });
+  // Handle initializing Chit Queue
+  useEffect(() => {
+    if (!tournament || loading || !initialized.current || Object.keys(teams).length === 0) return;
+    
+    if (!tournament.chitQueue) {
+      // Find teams that need players
+      const incomplete = Object.values(teams).filter(t => t.menCount < tournament.menSlots || t.womenCount < tournament.womenSlots);
+      const order = incomplete.sort(() => Math.random() - 0.5).map(t => t.id);
+      
+      if (order.length > 0) {
+        update(ref(db), { [`tournaments/${tournamentId}/chitQueue`]: { order, currentIndex: 0 } });
+      }
     }
+  }, [tournament, teams, loading, tournamentId]);
 
-    return { remainingMen, remainingWomen, pendingMenSlots, pendingWomenSlots };
-  };
+  const teamList = Object.values(teams);
+  const chitQueue = tournament?.chitQueue;
+  const currentTeamId = chitQueue && chitQueue.order.length > 0 ? chitQueue.order[chitQueue.currentIndex] : null;
 
-  const handlePickChit = async (player: Player, forceOverride = false) => {
-    if (!selectedTeamId) { toast.error("Select a team first!"); return; }
+  const handlePickChit = async (player: Player) => {
+    if (!currentTeamId) { toast.error("No team in turn queue!"); return; }
     if (revealed[player.playerId]) return;
-    if (!tournament || !tournamentId) return;
-    const team = teams[selectedTeamId];
+    if (!tournament || !tournamentId || !chitQueue) return;
+    const team = teams[currentTeamId];
     if (!team) return;
 
     const isMen = player.gender === "Men";
@@ -80,35 +75,56 @@ function UnsoldChitContent() {
       ? team.menCount >= tournament.menSlots
       : team.womenCount >= tournament.womenSlots;
 
-    if (slotFull && !forceOverride && !genderOverride[player.playerId]) {
-      toast.error(`${team.name} has no ${player.gender} slots left! Use the Override button below to allow this pick.`);
-      return;
-    }
-
-    // If override: put player in the opposite slot count
-    const countKey = slotFull && forceOverride
-      ? (isMen ? "womenCount" : "menCount")   // put them in the other gender's count
+    // Auto-override logic: increment the count that corresponds to the player's gender unless it's full.
+    // If it's full, we increment the opposite count to maintain total slot capacity properly.
+    const countKey = slotFull
+      ? (isMen ? "womenCount" : "menCount") 
       : (isMen ? "menCount" : "womenCount");
 
-    const currentCount = slotFull && forceOverride
+    const currentCount = slotFull
       ? (isMen ? team.womenCount : team.menCount)
       : (isMen ? team.menCount : team.womenCount);
 
     setRevealed(r => ({ ...r, [player.playerId]: true }));
     const updates: Record<string, unknown> = {};
     updates[`tournaments/${tournamentId}/players/${player.playerId}/status`] = "sold";
-    updates[`tournaments/${tournamentId}/players/${player.playerId}/soldTo`] = selectedTeamId;
+    updates[`tournaments/${tournamentId}/players/${player.playerId}/soldTo`] = currentTeamId;
     updates[`tournaments/${tournamentId}/players/${player.playerId}/soldPrice`] = 0;
-    updates[`tournaments/${tournamentId}/teams/${selectedTeamId}/${countKey}`] = currentCount + 1;
+    updates[`tournaments/${tournamentId}/teams/${currentTeamId}/${countKey}`] = currentCount + 1;
+    
+    // Compute next turn index
+    let nextIndex = (chitQueue.currentIndex + 1) % chitQueue.order.length;
+    let loopCount = 0;
+    
+    while (loopCount < chitQueue.order.length) {
+      const tId = chitQueue.order[nextIndex];
+      const t = teams[tId];
+      
+      let tMen = t.menCount;
+      let tWomen = t.womenCount;
+      
+      // Predict the updated counts for the team we JUST modified
+      if (tId === currentTeamId) {
+        if (countKey === "menCount") tMen++;
+        else tWomen++;
+      }
+      
+      // If this team is still incomplete, break and use this index
+      if (tMen < tournament.menSlots || tWomen < tournament.womenSlots) {
+        break;
+      }
+      
+      nextIndex = (nextIndex + 1) % chitQueue.order.length;
+      loopCount++;
+    }
+    
+    updates[`tournaments/${tournamentId}/chitQueue/currentIndex`] = nextIndex;
+
     await update(ref(db), updates);
-    setAssignments(a => ({ ...a, [player.playerId]: selectedTeamId }));
+    setAssignments(a => ({ ...a, [player.playerId]: currentTeamId }));
 
-    const note = slotFull && forceOverride ? " (gender override)" : "";
+    const note = slotFull ? " (forced override)" : "";
     toast.success(`${player.name} → ${team.name}!${note}`);
-  };
-
-  const toggleOverride = (playerId: string) => {
-    setGenderOverride(g => ({ ...g, [playerId]: !g[playerId] }));
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37]" /></div>;
@@ -117,10 +133,6 @@ function UnsoldChitContent() {
 
   const assignedCount = Object.keys(assignments).length;
   const allAssigned = assignedCount === chitList.length;
-  const { remainingMen, remainingWomen, pendingMenSlots, pendingWomenSlots } = getGenderStats();
-  const menShortfall = remainingMen < pendingMenSlots;
-  const womenShortfall = remainingWomen < pendingWomenSlots;
-  const showOverrideHint = menShortfall || womenShortfall;
 
   return (
     <main className="min-h-screen p-6 flex flex-col items-center">
@@ -137,34 +149,40 @@ function UnsoldChitContent() {
             <div className="h-full bg-gradient-to-r from-[#d4af37] to-yellow-300 rounded-full transition-all duration-500"
               style={{ width: `${(assignedCount / chitList.length) * 100}%` }} />
           </div>
-
-          {/* Gender imbalance warning */}
-          {showOverrideHint && (
-            <div className="mt-4 mx-auto max-w-lg bg-orange-500/10 border border-orange-500/40 rounded-xl px-4 py-3 text-sm text-orange-300">
-              <span className="font-bold">⚠ Gender imbalance detected!</span>
-              {menShortfall && <span className="block text-xs mt-0.5">Only {remainingMen} male player{remainingMen !== 1 ? "s" : ""} left for {pendingMenSlots} pending Men slots.</span>}
-              {womenShortfall && <span className="block text-xs mt-0.5">Only {remainingWomen} female player{remainingWomen !== 1 ? "s" : ""} left for {pendingWomenSlots} pending Women slots.</span>}
-              <span className="block text-xs mt-1 text-orange-200/70">Use the <strong>Override</strong> button on a chit card to allow picking opposite gender.</span>
-            </div>
-          )}
         </div>
 
-        {/* Team selector */}
-        <div className="glass rounded-xl p-4 mb-6">
-          <p className="text-xs text-[#b0b8d4] mb-3 uppercase tracking-wider font-semibold">Select which team is picking →</p>
-          <div className="flex flex-wrap gap-2">
-            {teamList.map(team => {
-              const hasSlots = team.menCount < tournament.menSlots || team.womenCount < tournament.womenSlots;
-              const isSelected = selectedTeamId === team.id;
-              return (
-                <button key={team.id} onClick={() => setSelectedTeamId(team.id)} disabled={!hasSlots}
-                  className={`px-4 py-2 rounded-xl border-2 font-bold text-sm transition-all ${isSelected ? "border-[#d4af37] bg-[#d4af37]/20 text-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.3)]" : hasSlots ? "border-white/20 hover:border-[#d4af37]/50 text-white" : "border-white/10 text-[#4a5568] opacity-40 cursor-not-allowed"}`}>
-                  {team.name}
-                  <span className="ml-2 text-[10px] opacity-60 font-mono">{team.menCount}M {team.womenCount}W</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Turn indicator */}
+        <div className="glass rounded-xl p-6 mb-8 border border-[#d4af37]/30 shadow-[0_0_30px_rgba(212,175,55,0.15)] flex flex-col items-center">
+          <p className="text-xs text-[#b0b8d4] mb-2 uppercase tracking-widest font-bold">Current Turn</p>
+          {currentTeamId ? (
+            <div className="text-3xl md:text-4xl font-black text-white text-center">
+              {teams[currentTeamId]?.name}
+            </div>
+          ) : (
+            <div className="text-2xl font-bold text-gray-500 italic">All teams complete!</div>
+          )}
+          
+          {chitQueue && chitQueue.order.length > 0 && (
+            <div className="mt-6 flex flex-wrap justify-center gap-3 w-full">
+              {chitQueue.order.map((tId, idx) => {
+                const isCurrent = idx === chitQueue.currentIndex;
+                const team = teams[tId];
+                const isFull = team.menCount >= tournament.menSlots && team.womenCount >= tournament.womenSlots;
+                
+                return (
+                  <div key={tId} className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                    isCurrent 
+                      ? "border-[#d4af37] bg-[#d4af37]/20 text-[#d4af37] scale-110 shadow-[0_0_10px_rgba(212,175,55,0.4)]" 
+                      : isFull
+                      ? "border-green-500/30 bg-green-500/10 text-green-400 opacity-50"
+                      : "border-white/10 bg-black/20 text-[#b0b8d4]"
+                  }`}>
+                    {team.name}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Chit grid */}
@@ -172,35 +190,21 @@ function UnsoldChitContent() {
           {chitList.map((player, idx) => {
             const isRevealed = revealed[player.playerId];
             const assignedTeam = assignments[player.playerId] ? teams[assignments[player.playerId]] : null;
-            const team = teams[selectedTeamId];
-            const isMen = player.gender === "Men";
-            const slotFull = team
-              ? (isMen ? team.menCount >= tournament.menSlots : team.womenCount >= tournament.womenSlots)
-              : false;
-            const isOverridden = genderOverride[player.playerId];
 
             return (
               <div key={player.playerId} className="flex flex-col gap-1.5">
                 <div
-                  onClick={() => !isRevealed && handlePickChit(player, isOverridden)}
+                  onClick={() => !isRevealed && currentTeamId && handlePickChit(player)}
                   className={`aspect-[3/4] rounded-2xl border-2 flex flex-col items-center justify-center p-3 select-none transition-all duration-500 ${isRevealed
                     ? "border-[#d4af37]/60 bg-gradient-to-b from-[#d4af37]/10 to-transparent cursor-default"
-                    : selectedTeamId
-                      ? slotFull && !isOverridden
-                        ? "border-red-500/40 bg-red-500/5 hover:border-red-400 cursor-pointer opacity-70"
-                        : "border-white/30 bg-black/40 hover:border-[#d4af37] hover:scale-105 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] cursor-pointer"
+                    : currentTeamId
+                      ? "border-white/30 bg-black/40 hover:border-[#d4af37] hover:scale-105 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] cursor-pointer"
                       : "border-white/10 bg-black/30 cursor-not-allowed opacity-60"
                     }`}>
                   {!isRevealed ? (
                     <>
                       <div className="text-[#b0b8d4] text-xs font-bold">Chit #{idx + 1}</div>
-                      {selectedTeamId && <div className="text-[#4a5568] text-[10px] mt-1">click to open</div>}
-                      {slotFull && !isOverridden && selectedTeamId && (
-                        <div className="text-red-400 text-[9px] mt-1 font-bold text-center">SLOT FULL</div>
-                      )}
-                      {isOverridden && (
-                        <div className="text-orange-400 text-[9px] mt-1 font-bold text-center">⚡ OVERRIDE ON</div>
-                      )}
+                      {currentTeamId && <div className="text-[#4a5568] text-[10px] mt-1 text-center">pick for {teams[currentTeamId]?.name}</div>}
                     </>
                   ) : (
                     <>
@@ -217,20 +221,6 @@ function UnsoldChitContent() {
                     </>
                   )}
                 </div>
-
-                {/* Override toggle button — only show when not revealed, a team is selected, and slot is full */}
-                {!isRevealed && selectedTeamId && slotFull && (
-                  <button
-                    onClick={() => toggleOverride(player.playerId)}
-                    className={`w-full text-[10px] font-bold py-1 rounded-lg border transition-all ${
-                      isOverridden
-                        ? "bg-orange-500/20 border-orange-500/60 text-orange-300 hover:bg-orange-500/30"
-                        : "bg-white/5 border-white/20 text-[#b0b8d4] hover:border-orange-400/50 hover:text-orange-400"
-                    }`}
-                  >
-                    {isOverridden ? "⚡ Override ON" : "Override"}
-                  </button>
-                )}
               </div>
             );
           })}
@@ -238,7 +228,7 @@ function UnsoldChitContent() {
 
         {/* Actions */}
         <div className="flex flex-col items-center gap-3">
-          {allAssigned && (
+          {(allAssigned || !currentTeamId) && (
             <button onClick={() => router.push(`/colors?tournament=${tournamentId}`)}
               className="bg-gradient-to-r from-[#d4af37] to-yellow-400 text-[#0a0e27] px-10 py-4 rounded-full font-black text-xl shadow-[0_0_25px_rgba(212,175,55,0.6)] hover:shadow-[0_0_45px_rgba(212,175,55,0.9)] transition-all hover:scale-105 animate-fade-in">
               Assign Team Colors
