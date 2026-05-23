@@ -639,7 +639,18 @@ export default function SetupPage() {
                     {players.map((p, i) => (
                       <tr key={i} className="border-b border-white/5 hover:bg-white/5">
                         <td className="py-2 px-3 text-[#b0b8d4]">{i + 1}</td>
-                        <td className="py-2 px-3 font-semibold">{p.name}</td>
+                        <td className="py-2 px-3 font-semibold">
+                          <input
+                            type="text"
+                            value={p.name}
+                            onChange={(e) => {
+                              const newPlayers = [...players];
+                              newPlayers[i].name = e.target.value;
+                              setPlayers(newPlayers);
+                            }}
+                            className="bg-transparent border-b border-transparent focus:border-[#d4af37] focus:outline-none w-full"
+                          />
+                        </td>
                         <td className="py-2 px-3">
                           <span className={`px-2 py-0.5 rounded text-xs font-bold ${p.gender === 'Men' ? 'bg-blue-500/20 text-blue-300' : 'bg-pink-500/20 text-pink-300'}`}>
                             {p.gender}
