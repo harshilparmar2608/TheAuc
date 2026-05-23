@@ -219,11 +219,13 @@ function HostPanelContent() {
     const p = editPlayers[playerId];
     if (!p) return;
     try {
-      await update(ref(db, `tournaments/${tournamentId}/players/${playerId}`), {
+      const updateData: any = {
         status: p.status,
         soldPrice: p.soldPrice,
         soldTo: p.status === 'sold' ? p.soldTo : null,
-      });
+      };
+      if (p.name !== undefined) updateData.name = p.name;
+      await update(ref(db, `tournaments/${tournamentId}/players/${playerId}`), updateData);
       toast.success("Player saved!");
     } catch (e) { toast.error("Error saving player"); }
   };
@@ -246,7 +248,7 @@ function HostPanelContent() {
     setEditTeams(tData);
 
     const pData: Record<string, any> = {};
-    Object.values(players).forEach(p => pData[p.playerId] = { status: p.status, soldPrice: p.soldPrice || 0, soldTo: p.soldTo || "" });
+    Object.values(players).forEach(p => pData[p.playerId] = { name: p.name, status: p.status, soldPrice: p.soldPrice || 0, soldTo: p.soldTo || "" });
     setEditPlayers(pData);
 
     setShowEditMode(true);
@@ -975,7 +977,12 @@ function HostPanelContent() {
                       .map(p => (
                       <div key={p.playerId} className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
                         <div className="flex-1 min-w-0 w-full text-center md:text-left">
-                          <div className="font-bold truncate">{p.name}</div>
+                          <input 
+                            type="text"
+                            value={editPlayers[p.playerId]?.name !== undefined ? editPlayers[p.playerId].name : p.name}
+                            onChange={(e) => setEditPlayers({...editPlayers, [p.playerId]: {...editPlayers[p.playerId], name: e.target.value}})}
+                            className="bg-transparent border-b border-transparent focus:border-[#d4af37] focus:outline-none w-full font-bold truncate"
+                          />
                           <div className="text-xs text-[#b0b8d4]">{p.gender}</div>
                         </div>
                         
