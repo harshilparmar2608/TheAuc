@@ -807,6 +807,7 @@ function HostPanelContent() {
           </div>
         </div>
       </div>
+      </div>
       )}
 
       {showRestartModal && (
