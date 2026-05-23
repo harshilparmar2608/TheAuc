@@ -307,8 +307,9 @@ function HostPanelContent() {
     // Determine new bid
     let newBid: number;
     if (!auction.currentBiddingTeam) {
-      // First bidder — enter at base price
-      newBid = currentPlayer.basePrice || tournament.basePrice || 0;
+      // First bidder — enter at current bid (if manually set) or base price
+      const basePrice = currentPlayer.basePrice || tournament.basePrice || 0;
+      newBid = Math.max(auction.currentBid || 0, basePrice);
     } else {
       // Outbid — increment from current
       newBid = (auction.currentBid || 0) + getIncrement(auction.currentBid || 0);
