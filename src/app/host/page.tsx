@@ -331,6 +331,15 @@ function HostPanelContent() {
       toast.error(`${team.name} has reached max Women slots!`); return;
     }
 
+    const remainingSlotsToBuy = (tournament.menSlots - team.menCount) + (tournament.womenSlots - team.womenCount);
+    const requiredReservedBudget = Math.max(0, remainingSlotsToBuy - 1) * (tournament.basePrice || 0);
+    const maxEffectiveBid = team.remainingBudget - requiredReservedBudget;
+
+    if (newBid > maxEffectiveBid) {
+      toast.error(`${team.name} must save ₹${requiredReservedBudget.toLocaleString()} for the remaining ${remainingSlotsToBuy - 1} slots! Max bid allowed is ₹${maxEffectiveBid.toLocaleString()}.`);
+      return;
+    }
+
     await update(ref(db, `tournaments/${tournamentId}/auction`), {
       currentBid: newBid,
       currentBiddingTeam: teamId,
@@ -359,6 +368,15 @@ function HostPanelContent() {
     }
     if (!isMen && team.womenCount >= tournament.womenSlots) {
       toast.error(`${team.name} has reached max Women slots!`); return;
+    }
+
+    const remainingSlotsToBuy = (tournament.menSlots - team.menCount) + (tournament.womenSlots - team.womenCount);
+    const requiredReservedBudget = Math.max(0, remainingSlotsToBuy - 1) * (tournament.basePrice || 0);
+    const maxEffectiveBid = team.remainingBudget - requiredReservedBudget;
+
+    if (soldPrice > maxEffectiveBid) {
+      toast.error(`${team.name} must save ₹${requiredReservedBudget.toLocaleString()} for the remaining ${remainingSlotsToBuy - 1} slots! Max bid allowed is ₹${maxEffectiveBid.toLocaleString()}.`);
+      return;
     }
 
     // Compute updated counts for this team
