@@ -27,6 +27,7 @@ export default function SetupPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [budget, setBudget] = useState(10000);
   const [playerBasePrice, setPlayerBasePrice] = useState(500);
+  const [maxBid, setMaxBid] = useState<number | "">("");
   const [logo, setLogo] = useState("/logo.png");
 
   // Tournament rules (each line = one rule)
@@ -161,6 +162,7 @@ export default function SetupPage() {
         colorAssignmentStatus: "pending",
         groupCount,
         rules: rulesText.split("\n").map(r => r.trim()).filter(Boolean),
+        maxBid: maxBid === "" ? null : maxBid,
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -255,6 +257,10 @@ export default function SetupPage() {
               <div>
                 <label className="block text-sm text-[#b0b8d4] mb-1">Base Price per Player</label>
                 <input type="number" value={playerBasePrice || ""} onChange={e => setPlayerBasePrice(parseInt(e.target.value) || 0)} className="w-full bg-black/50 border border-[#d4af37]/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]" />
+              </div>
+              <div>
+                <label className="block text-sm text-[#b0b8d4] mb-1">Max Bid (Optional)</label>
+                <input type="number" value={maxBid} onChange={e => setMaxBid(e.target.value ? parseInt(e.target.value) : "")} placeholder="Leave empty for no limit" className="w-full bg-black/50 border border-[#d4af37]/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]" />
               </div>
             </div>
 

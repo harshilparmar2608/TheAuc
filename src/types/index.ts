@@ -36,6 +36,7 @@ export interface Tournament {
   basePrice: number;
   incrementRules?: IncrementRule[];   // tiered bid increment config
   rules?: string[];                   // auction rules shown before start
+  maxBid?: number;                    // optional overall maximum limit for bids
   createdAt: number;
   updatedAt: number;
 }

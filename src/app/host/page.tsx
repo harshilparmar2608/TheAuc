@@ -195,6 +195,7 @@ function HostPanelContent() {
         year: editTournament.year || tournament.year,
         basePrice: editTournament.basePrice ?? tournament.basePrice,
         budget: editTournament.budget ?? tournament.budget,
+        maxBid: editTournament.maxBid === "" ? null : (editTournament.maxBid ?? tournament.maxBid ?? null),
       });
       toast.success("Settings saved!");
     } catch (e) { toast.error("Error saving settings"); }
@@ -233,6 +234,7 @@ function HostPanelContent() {
       year: tournament.year,
       basePrice: tournament.basePrice || 0,
       budget: tournament.budget || 0,
+      maxBid: tournament.maxBid ?? "",
     });
     setEditRules(tournament.incrementRules ? [...tournament.incrementRules] : [
       { upTo: 20000, increment: 2000 },
@@ -285,6 +287,11 @@ function HostPanelContent() {
   const setBidAmount = async (amount: number) => {
     if (!tournamentId || !auction) return;
     const newBid = Math.max(tournament.basePrice || 0, amount);
+    
+    if (tournament.maxBid && newBid > tournament.maxBid) {
+      toast.error(`Cannot exceed Max Bid of ₹${tournament.maxBid.toLocaleString()}!`);
+      return;
+    }
     await update(ref(db, `tournaments/${tournamentId}/auction`), {
       currentBid: newBid,
       currentBiddingTeam: null,
@@ -305,6 +312,11 @@ function HostPanelContent() {
     } else {
       // Outbid — increment from current
       newBid = (auction.currentBid || 0) + getIncrement(auction.currentBid || 0);
+    }
+
+    if (tournament.maxBid && newBid > tournament.maxBid) {
+      toast.error(`Max Bid of ₹${tournament.maxBid.toLocaleString()} reached!`);
+      return;
     }
 
     if (team.remainingBudget < newBid) {
@@ -888,9 +900,15 @@ function HostPanelContent() {
                       <input type="number" value={editTournament.basePrice || ""} onChange={e => setEditTournament({...editTournament, basePrice: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold text-[#b0b8d4] mb-2">Default Team Budget (₹)</label>
-                    <input type="number" value={editTournament.budget || ""} onChange={e => setEditTournament({...editTournament, budget: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-[#b0b8d4] mb-2">Default Team Budget (₹)</label>
+                      <input type="number" value={editTournament.budget || ""} onChange={e => setEditTournament({...editTournament, budget: parseInt(e.target.value) || 0})} className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-[#b0b8d4] mb-2">Max Bid (₹)</label>
+                      <input type="number" value={editTournament.maxBid ?? ""} onChange={e => setEditTournament({...editTournament, maxBid: e.target.value ? parseInt(e.target.value) : ""})} placeholder="No limit" className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:border-[#d4af37] focus:outline-none" />
+                    </div>
                   </div>
                   <button onClick={saveTournamentSettings} className="w-full bg-[#d4af37] text-black font-bold py-3 rounded-lg hover:bg-yellow-400 shadow-[0_0_15px_rgba(212,175,55,0.3)]">Save Settings</button>
                 </div>

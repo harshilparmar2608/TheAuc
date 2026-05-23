@@ -1,0 +1,103 @@
+# THE AUC - OFFICIAL OPERATION MANUAL
+
+This manual provides a step-by-step guide to conducting your auction smoothly. You will be using two separate laptops:
+1. HOST LAPTOP: Used by the auctioneer to control everything (bids, picking players, assigning teams).
+2. LIVE PROJECTOR LAPTOP: Connected to a projector/big screen for the audience to watch the event unfold.
+
+=======================================================
+PART 1: PRE-AUCTION PREPARATION & SETUP
+=======================================================
+
+1. LINK SETUP
+   - Both laptops need internet access.
+   - Live Projector Laptop: Open the website and navigate to the Home page. Keep it in Full Screen mode (F11 on Windows).
+   - Host Laptop: Open the website and navigate to the "Host Panel" or "Setup" page. 
+
+2. PRE-SHOW: HALL OF FAME & GALLERY
+   - Before the auction begins, use the Live Projector Laptop to show the audience the Hall of Fame and Gallery.
+   - Navigate to the "Hall of Fame" page to showcase past winners and legends.
+   - Navigate to the "Gallery" page to show memories and hype up the audience.
+   - Once you are ready to begin the actual event, navigate the Live Projector Laptop to the "Live" page.
+
+3. TOURNAMENT SETUP (HOST LAPTOP)
+   - On the Host Laptop, go to the Setup page.
+   - Ensure your tournament data is correctly loaded (Teams, Players, Budget, Slots).
+   - Enter your "Tournament Rules" in the Setup page. This will be displayed to the audience later.
+
+=======================================================
+PART 2: STARTING THE AUCTION
+=======================================================
+
+1. THE WAITING SCREEN
+   - On the Live Projector Laptop, the "Live" screen will show a "Waiting for Host" message and will automatically display the Tournament Rules for the audience to read while they settle down.
+
+2. INITIATING THE AUCTION
+   - On the Host Laptop, navigate to the "Host Panel".
+   - You will see a "START AUCTION" button. 
+   - When the crowd is ready, click "START AUCTION".
+   - **What happens next:** The Live screen will instantly trigger a dramatic 3-second countdown. Once the countdown finishes, the first random player will be revealed on the big screen with a golden "Matrix-style" scramble animation!
+
+=======================================================
+PART 3: CONDUCTING BIDS (THE MAIN EVENT)
+=======================================================
+
+1. THE PLAYER REVEAL
+   - The system automatically picks a random player. Neither you nor the audience knows who is coming up next until the scramble animation locks in.
+   - The Host Laptop will show the player's details, base price, and stats.
+
+2. TAKING BIDS
+   - The current bid always starts at the player's Base Price.
+   - Below the current bid, you will see the active "Increment Rules" (e.g., +100 if bid is below 1000, +200 if above 1000).
+   - When a team raises their paddle to bid, **click on that Team's Card** on the Host Laptop.
+   - The bid will automatically increase by the exact increment amount. The Live screen will instantly update with an animation showing which team took the lead.
+   - *Tip:* The Host screen shows which teams cannot afford the next bid, or whose gender slots are already full. Their cards will be faded out and unclickable to prevent mistakes.
+
+3. SOLD OR UNSOLD
+   - Once the bidding stops, you have two options:
+     - **SOLD:** Click the green "SOLD" button. Confetti will explode on the Live screen, and the player is assigned to the winning team.
+     - **UNSOLD:** If no one bids the base price, click the orange "UNSOLD" button. The player will be sent to the "Chit Round" for later.
+
+4. THE TIMER
+   - You have a timer on the Host screen (Play/Pause/Reset). Use this to build suspense ("Going once... going twice..."). It automatically resets to 30 seconds for the next player.
+
+5. NEXT PLAYER
+   - Once a player is Sold or Unsold, click the "Next Player" button to bring up the next random player with another scramble animation.
+
+=======================================================
+PART 4: THE CHIT ROUND (OVERRIDE MODE)
+=======================================================
+If any players went "Unsold" during the main auction, you will be directed to the Chit Round to assign them to teams that are still missing players.
+
+1. HOW IT WORKS
+   - The system automatically calculates which teams still need players to fill their required slots.
+   - It places these incomplete teams into a "Randomized Turn Queue".
+   - The UI will explicitly tell you whose turn it is: **"Current Turn: [Team Name]"**
+
+2. PICKING A CHIT
+   - The Host clicks on any of the hidden mystery chits.
+   - The player is revealed and is **automatically forced into the active team**. 
+   - Even if the team already has the maximum number of players for that gender, the system will force the override to ensure everyone gets a team, keeping the total player count mathematically balanced.
+   - The turn will automatically pass to the next team in the queue. 
+   - The queue loops continuously until all chits are opened or all teams are full.
+
+=======================================================
+PART 5: ASSIGNING TEAM COLORS & THE GRAND FINALE
+=======================================================
+Once all players are assigned, you proceed to the "Colors" page to assign T-shirt colors to the teams.
+
+1. COLOR ASSIGNMENT
+   - On the Host Laptop, pick a color for a team.
+   - When you click "Reveal Color", the Live screen will show a dramatic spinning wheel animation that lands on the chosen color, followed by a cinematic reveal of the team's entire roster.
+   - Repeat this for all teams.
+
+2. EDIT MODE (EMERGENCIES ONLY)
+   - If you ever make a mistake (e.g., assigning a player to the wrong team, or needing to fix a budget), click the small gear/settings icon on the Host Panel.
+   - Enter your password to access "Edit Mode" where you can manually fix player statuses, sold prices, team budgets, and bid increments on the fly without breaking the auction flow.
+
+=======================================================
+PRO-TIPS FOR A SMOOTH EVENT
+=======================================================
+- **Keep both laptops plugged in** so they don't go to sleep.
+- **Do not refresh the Host page unnecessarily**, though if you do, your state is safely saved in the database and will restore instantly.
+- **Communicate with the projector operator:** If you need them to scroll or show something specific on the Live screen, give them a subtle signal. (Though the Live screen is 99% automated!)
+- If the Live screen seems out of sync (which is rare), just press `F5` on the Live Projector Laptop to refresh. It will instantly snap back to the exact current state of the auction.
