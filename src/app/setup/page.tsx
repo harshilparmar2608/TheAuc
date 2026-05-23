@@ -644,9 +644,9 @@ export default function SetupPage() {
                             type="text"
                             value={p.name}
                             onChange={(e) => {
-                              const newPlayers = [...players];
-                              newPlayers[i].name = e.target.value;
-                              setPlayers(newPlayers);
+                              setPlayers(players.map((player, idx) => 
+                                idx === i ? { ...player, name: e.target.value } : player
+                              ));
                             }}
                             className="bg-transparent border-b border-transparent focus:border-[#d4af37] focus:outline-none w-full"
                           />
