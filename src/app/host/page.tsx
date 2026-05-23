@@ -455,9 +455,12 @@ function HostPanelContent() {
   const unsoldCount = (auction?.unsoldPlayers || []).length;
 
   // Not started yet
-  if (!auction || tournament.status === "setup") {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-8">
+  const isSetup = !auction || tournament.status === "setup";
+
+  return (
+    <>
+      {isSetup ? (
+        <div className="min-h-screen flex items-center justify-center p-8">
         {/* Host-side countdown overlay */}
         {hostCountdown !== null && hostCountdown > 0 && (
           <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
@@ -506,17 +509,21 @@ function HostPanelContent() {
 
           <button
             onClick={handleStartAuction}
-            className="w-full bg-gradient-to-r from-[#d4af37] to-yellow-500 text-[#0a0e27] py-4 rounded-xl font-black text-xl shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:shadow-[0_0_50px_rgba(212,175,55,0.8)] transition-all"
+            className="w-full bg-gradient-to-r from-[#d4af37] to-yellow-500 text-[#0a0e27] py-4 rounded-xl font-black text-xl shadow-[0_0_30px_rgba(212,175,55,0.5)] hover:shadow-[0_0_50px_rgba(212,175,55,0.8)] transition-all mb-4"
           >
             Begin Auction
           </button>
+
+          <button
+            onClick={() => setShowEditPasswordModal(true)}
+            className="w-full border border-blue-500/50 text-blue-400 py-3 rounded-xl font-bold hover:bg-blue-500/10 transition-all"
+          >
+            Edit Auction Settings & Players
+          </button>
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col lg:flex-row gap-4 p-4 animate-fade-in">
+      ) : (
+        <div className="min-h-screen flex flex-col lg:flex-row gap-4 p-4 animate-fade-in">
 
       {/* LEFT COLUMN */}
       <div className="w-full lg:w-[58%] flex flex-col gap-4">
@@ -800,6 +807,7 @@ function HostPanelContent() {
           </div>
         </div>
       </div>
+      )}
 
       {showRestartModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -1060,7 +1068,7 @@ function HostPanelContent() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
